@@ -1,4 +1,6 @@
 import { Buffer } from "buffer";
+import { useEffect, useState } from "react";
+import Prompt from "./components/Propmt";
 
 function objectToQueryString(obj: any) {
   return Object.entries(obj)
@@ -19,7 +21,7 @@ function getAuthUrl() {
     client_id: clientId,
     response_type: "code",
     redirect_uri: redirectUri,
-    scope: "user-read-playback-state",
+    scope: "user-library-modify user-library-read",
   };
 
   const queryString = objectToQueryString(params);
@@ -63,10 +65,6 @@ async function getAuthToken(authCode: string) {
   return response;
 }
 
-function FinalPrompt() {
-  return <p>Sweet</p>;
-}
-
 function Login() {
   return <a href={getAuthUrl()}>Log in with Spotify</a>;
 }
@@ -74,12 +72,27 @@ function Login() {
 function App() {
   const url = new URL(window.location.href);
   const authCode = url.searchParams.get("code");
-  const authToken = authCode ? getAuthToken(authCode) : null;
+  let [authToken, setAuthToken] = useState<string>("");
+
+  useEffect(() => {
+    if (!authCode) return;
+
+    const fetchAuthToken = async () => {
+      const response = await getAuthToken(authCode);
+      if (!response.ok) throw new Error("Failed to get access token :(");
+
+      const body = await response.json();
+
+      setAuthToken(body["access_token"]);
+    };
+
+    fetchAuthToken();
+  }, [authCode]);
 
   return (
     <>
       <h1>Spotify deduplicater</h1>
-      {authCode ? <FinalPrompt /> : <Login />}
+      {authCode ? <Prompt token={authToken} /> : <Login />}
     </>
   );
 }
