@@ -50,7 +50,7 @@ async function batchFetchTracks({limit=50, offset=0, token}: Partial<BatchParams
 async function getTotalNumberOfSongs(token: string) {
   const tracks = '/me/tracks';
 
-  const response = await fetch(spotifyApiBase + tracks, {
+  const response = await fetch(spotifyApiBase + tracks + '?limit=1', {
     method: "GET",
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -76,10 +76,9 @@ async function getLibrary(token: string) {
     DEBUG MODE
   */
 
-  // const total = await getTotalNumberOfSongs(token);
-  const total = 1000;
+  const total = await getTotalNumberOfSongs(token);
+  // const total = 1000;
   const numberOfBatches = Math.ceil(total / batchSize);
-
 
   let library: Track[] = [];
 
@@ -110,8 +109,8 @@ export async function detectDuplicates(token: string) {
   }
 
   return duplicates.sort((a, b) => {
-    let aUpper = a.name.toUpperCase();
-    let bUpper = b.name.toUpperCase();
+    let aUpper = a.album.toUpperCase();
+    let bUpper = b.album.toUpperCase();
     if (aUpper < bUpper) return -1;
     if (aUpper > bUpper) return 1;
     else return 0;
