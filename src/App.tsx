@@ -40,7 +40,7 @@ async function getAuthToken(authCode: string) {
   const params = {
     code: authCode,
     redirect_uri: redirectUri,
-    grant_type: "client_credentials",
+    grant_type: "authorization_code",
   };
 
   function getEncodedAuthString() {
@@ -82,6 +82,7 @@ function App() {
       if (!response.ok) throw new Error("Failed to get access token :(");
 
       const body = await response.json();
+      console.log(body);
 
       setAuthToken(body["access_token"]);
     };
@@ -92,7 +93,7 @@ function App() {
   return (
     <>
       <h1>Spotify deduplicater</h1>
-      {authCode ? <Prompt token={authToken} /> : <Login />}
+      {authToken ? <Prompt token={authToken} /> : <Login />}
     </>
   );
 }
