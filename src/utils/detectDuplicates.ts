@@ -38,6 +38,7 @@ async function batchFetchTracks({limit=50, offset=0, token}: Partial<BatchParams
   const itemsReduced: Track[] = items.map((item: any) => {
     return {
       id: item.track.id,
+      spotifyUri: item.track.uri,
       name: item.track.name,
       album: item.track.album.name,
       artist: item.track.artists[0].name, // secondary artists btfo
@@ -76,8 +77,8 @@ async function getLibrary(token: string) {
     DEBUG MODE
   */
 
-  const total = await getTotalNumberOfSongs(token);
-  // const total = 1000;
+  // const total = await getTotalNumberOfSongs(token);
+  const total = 200;
   const numberOfBatches = Math.ceil(total / batchSize);
 
   let library: Track[] = [];

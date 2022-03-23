@@ -1,6 +1,6 @@
 import { Buffer } from "buffer";
 import { useEffect, useState } from "react";
-import Prompt from "./components/Propmt";
+import Prompt from "./components/Prompt";
 
 function objectToQueryString(obj: any) {
   return Object.entries(obj)
