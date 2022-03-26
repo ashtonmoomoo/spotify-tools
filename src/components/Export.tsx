@@ -1,107 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Track, getLibrary } from "../utils/constants";
 import getTokenFromCookie from "../utils/getTokenFromCookie";
-
-const spotifyApiBase = "https://api.spotify.com/v1";
-
-type FetchTrackParams = {
-  limit: number;
-  offset: number;
-  token: string;
-};
-
-type Track = {
-  uri: string;
-  name: string;
-  album: string;
-  artist: string;
-};
-
-async function batchFetchTracks({
-  limit = 50,
-  offset = 0,
-  token,
-}: Partial<FetchTrackParams>): Promise<Track[]> {
-  const tracks = "/me/tracks";
-  const params = `?limit=${limit}&offset=${offset}`;
-
-  const response = await fetch(spotifyApiBase + tracks + params, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error("Something went wrong fetching tracks :(");
-  }
-
-  const body = await response.json();
-  const { items } = body;
-
-  // idk what to do about this lol
-  const itemsReduced = items.map((item: any) => {
-    return {
-      uri: item.track.uri,
-      name: item.track.name,
-      album: item.track.album.name,
-      artist: item.track.artists[0].name, // secondary artists btfo
-    };
-  });
-
-  return itemsReduced;
-}
-
-async function getTotalNumberOfSongs(token: string) {
-  const tracks = "/me/tracks";
-
-  const response = await fetch(spotifyApiBase + tracks + "?limit=1", {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error("Something went wrong fetching tracks");
-  }
-
-  const body = await response.json();
-  const { total } = body;
-
-  return total;
-}
-
-type SetCompletion = (completion: string) => void;
-
-async function getLibrary(token: string, setCompletion: SetCompletion) {
-  const batchSize = 50; // API limit
-
-  /*
-    DEBUG MODE
-  */
-
-  // const total = await getTotalNumberOfSongs(token);
-  const total = 700;
-  const numberOfBatches = Math.ceil(total / batchSize);
-
-  let library: Track[] = [];
-
-  for (let i = 0; i < numberOfBatches; i++) {
-    let offset = batchSize * i;
-
-    const tracks = await batchFetchTracks({ offset, token });
-    library = [...library, ...tracks];
-
-    setCompletion(((i / numberOfBatches) * 100).toFixed(2));
-  }
-
-  return library;
-}
 
 function prepareSongForCSV(song: Track) {
   let row: string[] = [];
@@ -160,9 +60,13 @@ function Export() {
 
 function ExportLibraryButton({ handleClick }: { handleClick: () => void }) {
   return (
-    <button type="button" onClick={handleClick}>
-      Export Library
-    </button>
+    <>
+      <h3>Export</h3>
+      <p>Click below to download a CSV of your Spotify liked songs:</p>
+      <button type="button" onClick={handleClick}>
+        Export Library
+      </button>
+    </>
   );
 }
 

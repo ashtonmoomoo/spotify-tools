@@ -70,7 +70,9 @@ function LoginButton() {
 }
 
 function setTokenCookie(token: string) {
-  document.cookie = `spotify_token=${token};path=/;max-age=60*60;samesite=lax`;
+  document.cookie = `spotify_token=${token};path=/;max-age=${
+    60 * 60
+  };samesite=lax;`;
 }
 
 function Login() {
