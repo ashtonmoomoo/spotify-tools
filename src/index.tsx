@@ -3,7 +3,7 @@ import ReactDOM from "react-dom";
 import App from "./App";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Login from "./Login";
-import Export from "./components/Export";
+import ExportImport from "./routes/ExportImport";
 
 ReactDOM.render(
   <React.StrictMode>
@@ -11,7 +11,7 @@ ReactDOM.render(
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="login" element={<Login />} />
-        <Route path="export-import" element={<Export />} />
+        <Route path="export-import" element={<ExportImport />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>,

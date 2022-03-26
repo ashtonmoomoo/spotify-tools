@@ -51,13 +51,13 @@ function Import() {
         spotify:track:4cOdK2wGLETKBW3PvgPWqT) in the first column.
       </p>
       <input type="file" accept=".csv" onChange={handleChange} />
-      {trackIds.length && (
+      {trackIds.length ? (
         <ul>
           {trackIds.map((trackId) => (
             <li>{trackId}</li>
           ))}
         </ul>
-      )}
+      ) : null}
     </>
   );
 }
