@@ -24,13 +24,13 @@ function parseCSV(CSVContent: string) {
 
 function Import() {
   let [file, setFile] = useState();
-  let [readFile, setReadFile] = useState<string | undefined>();
   let [trackIds, setTrackIds] = useState<string[]>([]);
   let [currentLibraryFetchCompletion, setCurrentLibraryFetchCompletion] =
     useState("0.00");
   let [fetchingCurrentLibrary, setFetchingCurrentLibrary] = useState(false);
   let [currentLibrary, setCurrentLibrary] = useState<Track[]>([]);
   let [songsToLike, setSongsToLike] = useState<string[]>([]);
+  let [okToFetch, setOkToFetch] = useState(false);
 
   const token = getTokenFromCookie();
 
@@ -39,7 +39,7 @@ function Import() {
   }
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !okToFetch) return;
 
     const fetchCurrentLibrary = async () => {
       setFetchingCurrentLibrary(true);
@@ -49,7 +49,7 @@ function Import() {
     };
 
     fetchCurrentLibrary();
-  }, [token]);
+  }, [token, okToFetch]);
 
   useEffect(() => {
     if (!file) return;
@@ -57,15 +57,9 @@ function Import() {
     let reader = new FileReader();
     reader.readAsText(file, "utf-8");
     reader.onload = (event: any) => {
-      setReadFile(event.target.result);
+      setTrackIds(parseCSV(event.target.result));
     };
   }, [file]);
-
-  useEffect(() => {
-    if (!readFile) return;
-
-    setTrackIds(parseCSV(readFile));
-  }, [readFile]);
 
   useEffect(() => {
     let currentLibrarySet = new Set(currentLibrary.map((x) => x.uri));
@@ -73,32 +67,30 @@ function Import() {
     setSongsToLike(missingSongs);
   }, [currentLibrary, trackIds]);
 
-  if (fetchingCurrentLibrary) {
-    return (
-      <p>
-        Fetching current Spotify library... {currentLibraryFetchCompletion}%
-        complete.
-      </p>
-    );
-  }
-
   return (
     <>
-      <h3>Import</h3>
       <p>
         Upload a CSV file with Spotify track IDs (e.g.
         spotify:track:4cOdK2wGLETKBW3PvgPWqT) in the first column.
       </p>
-      <input type="file" accept=".csv" onChange={handleChange} />
+      <input
+        type="file"
+        accept=".csv"
+        onChange={handleChange}
+        onClick={() => setOkToFetch(true)}
+      />
+      {fetchingCurrentLibrary ? (
+        <p>
+          Fetching your current Spotify library (to determine the delta){" "}
+          {currentLibraryFetchCompletion}% complete.
+        </p>
+      ) : null}
       {songsToLike.length ? (
-        <>
-          <p>Missing songs:</p>
-          <ul>
-            {songsToLike.map((x) => (
-              <li>{x}</li>
-            ))}
-          </ul>
-        </>
+        <ul>
+          {songsToLike.map((x) => (
+            <li>{x}</li>
+          ))}
+        </ul>
       ) : null}
     </>
   );

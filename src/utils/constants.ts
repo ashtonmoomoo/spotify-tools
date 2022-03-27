@@ -8,6 +8,7 @@ type FetchTrackParams = {
   limit: number;
   offset: number;
   token: string;
+  market: string;
 };
 
 export type Track = {
@@ -36,7 +37,7 @@ export async function getTotalNumberOfSongs(token: string) {
   const response = await spotifyGet({ endpoint: tracks, token, options });
 
   if (!response.ok) {
-    throw new Error("Something went wrong fetching tracks");
+    throw new Error("Something went wrong fetching library count");
   }
 
   const body = await response.json();
@@ -49,9 +50,10 @@ async function batchFetchTracks({
   limit = 50,
   offset = 0,
   token,
+  market
 }: Partial<FetchTrackParams>): Promise<Track[]> {
   const tracks = "/me/tracks";
-  const options = `?limit=${limit}&offset=${offset}`;
+  const options = `?limit=${limit}&offset=${offset}&market=${market}`;
 
   const response = await spotifyGet({ endpoint: tracks, token, options });
 
@@ -79,13 +81,16 @@ type SetCompletion = (completion: string) => void;
 
 export async function getLibrary(token: string, setCompletion: SetCompletion) {
   const batchSize = 50; // API limit
+  const user = await spotifyGet({ endpoint: "/me", token })
+  const body = await user.json();
+  const market = body.country;
 
   /*
     DEBUG MODE
   */
 
-  const total = await getTotalNumberOfSongs(token);
-  // const total = 700;
+  // const total = await getTotalNumberOfSongs(token);
+  const total = 700;
   const numberOfBatches = Math.ceil(total / batchSize);
 
   let library: Track[] = [];
@@ -93,7 +98,7 @@ export async function getLibrary(token: string, setCompletion: SetCompletion) {
   for (let i = 0; i < numberOfBatches; i++) {
     let offset = batchSize * i;
 
-    const tracks = await batchFetchTracks({ offset, token });
+    const tracks = await batchFetchTracks({ offset, token, market });
     library = [...library, ...tracks];
 
     setCompletion(((i / numberOfBatches) * 100).toFixed(2));

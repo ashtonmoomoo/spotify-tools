@@ -6,7 +6,7 @@ import getTokenFromCookie from "../utils/getTokenFromCookie";
 function prepareSongForCSV(song: Track) {
   let row: string[] = [];
   for (let field of Object.values(song)) {
-    row.push(`"${field.replace(/"/g, '""')}"`);
+    row.push(`"${field?.replace(/"/g, '""')}"`);
   }
 
   return row.join(",") + "\n";
@@ -20,6 +20,18 @@ function getCSV(library: Track[]) {
   });
 
   return csv;
+}
+
+function removeDuplicates(library: Track[]) {
+  let idToTrack = new Map<string, Track>();
+  library.forEach((t) => idToTrack.set(t.uri, t));
+
+  let tracksToReturn: Track[] = [];
+  for (let track of idToTrack.values()) {
+    tracksToReturn.push(track);
+  }
+
+  return tracksToReturn;
 }
 
 function Export() {
@@ -38,7 +50,7 @@ function Export() {
 
     setLoading(true);
     const response = await getLibrary(token, setCompletion);
-    const content = getCSV(response);
+    const content = getCSV(removeDuplicates(response));
     setCSVContent(content);
     setLoading(false);
   }
@@ -61,7 +73,6 @@ function Export() {
 function ExportLibraryButton({ handleClick }: { handleClick: () => void }) {
   return (
     <>
-      <h3>Export</h3>
       <p>Click below to download a CSV of your Spotify liked songs:</p>
       <button type="button" onClick={handleClick}>
         Export Library

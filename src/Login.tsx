@@ -21,7 +21,7 @@ function getAuthUrl() {
     client_id: clientId,
     response_type: "code",
     redirect_uri: redirectUri,
-    scope: "user-library-modify user-library-read",
+    scope: "user-library-modify user-library-read user-read-private",
   };
 
   const queryString = objectToQueryString(params);
