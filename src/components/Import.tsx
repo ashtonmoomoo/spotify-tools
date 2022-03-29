@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { getLibrary } from "../utils/constants";
+import { getLibrary, likeSongs } from "../utils/constants";
 import { Track } from "../utils/constants";
-import getTokenFromCookie from "../utils/getTokenFromCookie";
 
 function isSpotifyTrackId(str: string) {
   const pattern = /spotify:track:[a-zA-Z0-9]{22}/;
@@ -31,25 +30,25 @@ function Import() {
   let [currentLibrary, setCurrentLibrary] = useState<Track[]>([]);
   let [songsToLike, setSongsToLike] = useState<string[]>([]);
   let [okToFetch, setOkToFetch] = useState(false);
+  let [progressRestoringLibrary, setProgressRestoringLibrary] =
+    useState("0.00");
 
-  const token = getTokenFromCookie();
-
-  function handleChange(event: any) {
+  function handleUpload(event: any) {
     setFile(event.target.files[0]);
   }
 
   useEffect(() => {
-    if (!token || !okToFetch) return;
+    if (!okToFetch) return;
 
     const fetchCurrentLibrary = async () => {
       setFetchingCurrentLibrary(true);
-      const library = await getLibrary(token, setCurrentLibraryFetchCompletion);
+      const library = await getLibrary(setCurrentLibraryFetchCompletion);
       setCurrentLibrary(library);
       setFetchingCurrentLibrary(false);
     };
 
     fetchCurrentLibrary();
-  }, [token, okToFetch]);
+  }, [okToFetch]);
 
   useEffect(() => {
     if (!file) return;
@@ -67,6 +66,14 @@ function Import() {
     setSongsToLike(missingSongs);
   }, [currentLibrary, trackIds]);
 
+  function likeMissingSongs() {
+    if (!songsToLike) return;
+
+    likeSongs(songsToLike, setProgressRestoringLibrary);
+  }
+
+  let [acceptedTerms, setAcceptedTerms] = useState(false);
+
   return (
     <>
       <p>
@@ -76,7 +83,7 @@ function Import() {
       <input
         type="file"
         accept=".csv"
-        onChange={handleChange}
+        onChange={handleUpload}
         onClick={() => setOkToFetch(true)}
       />
       {fetchingCurrentLibrary ? (
@@ -85,12 +92,35 @@ function Import() {
           {currentLibraryFetchCompletion}% complete.
         </p>
       ) : null}
-      {songsToLike.length ? (
-        <ul>
-          {songsToLike.map((x) => (
-            <li>{x}</li>
-          ))}
-        </ul>
+      {!fetchingCurrentLibrary && songsToLike.length ? (
+        <>
+          <h4>
+            Here are the IDs of the songs missing from your library that are on
+            the .csv you uploaded. You can paste the ID into your browser URL
+            bar (in a different tab) and press enter to check which song it is.
+          </h4>
+          <ul>
+            {songsToLike.map((x) => (
+              <li key={x}>{x}</li>
+            ))}
+          </ul>
+          <label htmlFor="fate-accepted">
+            I accept this might rek my library but I want to do it anyway
+          </label>
+          <input
+            id="fate-accepted"
+            type="checkbox"
+            onChange={() => setAcceptedTerms(!acceptedTerms)}
+          />
+          <br />
+          <button
+            type="button"
+            disabled={!acceptedTerms || progressRestoringLibrary !== "0.00"}
+            onClick={likeMissingSongs}
+          >
+            Like missing songs
+          </button>
+        </>
       ) : null}
     </>
   );

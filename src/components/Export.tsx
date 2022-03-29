@@ -49,7 +49,7 @@ function Export() {
     if (!token) return null;
 
     setLoading(true);
-    const response = await getLibrary(token, setCompletion);
+    const response = await getLibrary(setCompletion);
     const content = getCSV(removeDuplicates(response));
     setCSVContent(content);
     setLoading(false);

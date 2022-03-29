@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import getTokenFromCookie from "./utils/getTokenFromCookie";
 import "./styles/global.css";
-import { spotifyGet } from "./utils/constants";
+import { spotifyFetch } from "./utils/constants";
 
 function App() {
   const [token, setToken] = useState<string | undefined>(undefined);
@@ -17,7 +17,7 @@ function App() {
     if (!token) return;
 
     const fetchUser = async () => {
-      const response = await spotifyGet({ endpoint: "/me", token });
+      const response = await spotifyFetch({ endpoint: "/me" });
       if (!response.ok) return;
       const body = await response.json();
       setUser(body.display_name);

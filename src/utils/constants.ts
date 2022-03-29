@@ -1,13 +1,16 @@
+import getTokenFromCookie from "./getTokenFromCookie";
+
+const BATCH_SIZE = 50; // API limit
+
 type FetchParams = {
   endpoint: string;
-  options?: any;
-  token?: string;
+  method?: "GET" | "PUT" | "POST";
+  options?: string;
 }
 
 type FetchTrackParams = {
   limit: number;
   offset: number;
-  token: string;
   market: string;
 };
 
@@ -18,23 +21,23 @@ export type Track = {
   artist: string;
 };
 
-export async function spotifyGet({endpoint, token, options=''}: FetchParams) {
+export async function spotifyFetch({endpoint, options='', method="GET"}: FetchParams) {
   const spotifyApiBase = "https://api.spotify.com/v1";
   return fetch(spotifyApiBase + endpoint + options, {
-    method: "GET",
+    method,
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${getTokenFromCookie()}`,
       "Content-Type": "application/json",
       Accept: "application/json",
     },
   });
 }
 
-export async function getTotalNumberOfSongs(token: string) {
+export async function getTotalNumberOfSongs() {
   const tracks = "/me/tracks";
   const options = "?limit=1";
 
-  const response = await spotifyGet({ endpoint: tracks, token, options });
+  const response = await spotifyFetch({ endpoint: tracks, options });
 
   if (!response.ok) {
     throw new Error("Something went wrong fetching library count");
@@ -49,13 +52,12 @@ export async function getTotalNumberOfSongs(token: string) {
 async function batchFetchTracks({
   limit = 50,
   offset = 0,
-  token,
   market
 }: Partial<FetchTrackParams>): Promise<Track[]> {
   const tracks = "/me/tracks";
   const options = `?limit=${limit}&offset=${offset}&market=${market}`;
 
-  const response = await spotifyGet({ endpoint: tracks, token, options });
+  const response = await spotifyFetch({ endpoint: tracks, options });
 
   if (!response.ok) {
     throw new Error("Something went wrong fetching tracks :(");
@@ -79,9 +81,8 @@ async function batchFetchTracks({
 
 type SetCompletion = (completion: string) => void;
 
-export async function getLibrary(token: string, setCompletion: SetCompletion) {
-  const batchSize = 50; // API limit
-  const user = await spotifyGet({ endpoint: "/me", token })
+export async function getLibrary(setCompletion: SetCompletion) {
+  const user = await spotifyFetch({ endpoint: "/me" })
   const body = await user.json();
   const market = body.country;
 
@@ -89,20 +90,47 @@ export async function getLibrary(token: string, setCompletion: SetCompletion) {
     DEBUG MODE
   */
 
-  // const total = await getTotalNumberOfSongs(token);
-  const total = 700;
-  const numberOfBatches = Math.ceil(total / batchSize);
+  const total = await getTotalNumberOfSongs();
+  // const total = 700;
+  const numberOfBatches = Math.ceil(total / BATCH_SIZE);
 
   let library: Track[] = [];
 
   for (let i = 0; i < numberOfBatches; i++) {
-    let offset = batchSize * i;
+    let offset = BATCH_SIZE * i;
 
-    const tracks = await batchFetchTracks({ offset, token, market });
+    const tracks = await batchFetchTracks({ offset, market });
     library = [...library, ...tracks];
 
     setCompletion(((i / numberOfBatches) * 100).toFixed(2));
   }
 
   return library;
+}
+
+function getTrackId(uri: string) {
+  return uri.split(':')[2];
+}
+
+export async function likeSongs(songsToLike: string[], setCompletion: SetCompletion) {
+  const total = songsToLike.length;
+  const numberOfBatches = Math.ceil(total / BATCH_SIZE);
+  let processed = 0;
+
+  for (let i = 0; i < numberOfBatches; i++) {
+    let offset = BATCH_SIZE * i;
+    let toProcessThisBatch = Math.min(BATCH_SIZE, (total - processed) % BATCH_SIZE); // probably uhhhh check this
+    let queryString = '?ids=';
+
+    for (let j = 0; j < toProcessThisBatch; j++) {
+      processed++;
+      queryString += getTrackId(songsToLike[offset + j]) + ',';
+    }
+
+    queryString = queryString.slice(0, -1);
+
+    await spotifyFetch({endpoint: '/me/tracks', options: queryString, method: "PUT"});
+
+    setCompletion(((i / numberOfBatches) * 100).toFixed(2));
+  }
 }
