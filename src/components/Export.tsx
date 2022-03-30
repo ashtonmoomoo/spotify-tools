@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Track, getLibrary } from "../utils/constants";
-import getTokenFromCookie from "../utils/getTokenFromCookie";
+import { getTokenFromCookie } from "../utils/constants";
 
 function prepareSongForCSV(song: Track) {
   let row: string[] = [];

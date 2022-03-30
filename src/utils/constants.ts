@@ -1,5 +1,3 @@
-import getTokenFromCookie from "./getTokenFromCookie";
-
 const BATCH_SIZE = 50; // API limit
 
 type FetchParams = {
@@ -20,6 +18,13 @@ export type Track = {
   album: string;
   artist: string;
 };
+
+export function getTokenFromCookie() {
+  return document.cookie
+  .split("; ")
+  .find((row) => row.startsWith("spotify_token"))
+  ?.split("=")[1];
+}
 
 export async function spotifyFetch({endpoint, options='', method="GET"}: FetchParams) {
   const spotifyApiBase = "https://api.spotify.com/v1";
@@ -119,7 +124,7 @@ export async function likeSongs(songsToLike: string[], setCompletion: SetComplet
 
   for (let i = 0; i < numberOfBatches; i++) {
     let offset = BATCH_SIZE * i;
-    let toProcessThisBatch = Math.min(BATCH_SIZE, (total - processed) % BATCH_SIZE); // probably uhhhh check this
+    let toProcessThisBatch = Math.min(BATCH_SIZE, total - processed); // probably uhhhh check this
     let queryString = '?ids=';
 
     for (let j = 0; j < toProcessThisBatch; j++) {

@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import getTokenFromCookie from "./utils/getTokenFromCookie";
+import { getTokenFromCookie, spotifyFetch } from "./utils/constants";
 import "./styles/global.css";
-import { spotifyFetch } from "./utils/constants";
 
 function App() {
   const [token, setToken] = useState<string | undefined>(undefined);
