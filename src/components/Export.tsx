@@ -1,51 +1,47 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Track, getLibrary } from "../utils/constants";
-import { getTokenFromCookie } from "../utils/constants";
+import {
+  getLibrary,
+  getTokenFromCookie,
+  removeDuplicates,
+} from "../utils/constants";
+import { downloadCSV, getCSV } from "../utils/csvTools";
 
-function prepareSongForCSV(song: Track) {
-  let row: string[] = [];
-  for (let field of Object.values(song)) {
-    row.push(`"${field?.replace(/"/g, '""')}"`);
-  }
-
-  return row.join(",") + "\n";
+function ExportLibraryButton({ handleClick }: { handleClick: () => void }) {
+  return (
+    <>
+      <p>Click below to download a CSV of your Spotify liked songs:</p>
+      <button type="button" onClick={handleClick}>
+        Export Library
+      </button>
+    </>
+  );
 }
 
-function getCSV(library: Track[]) {
-  let csv = Object.keys(library[0]).join(",") + "\n";
-
-  library.forEach((song) => {
-    csv += prepareSongForCSV(song);
-  });
-
-  return csv;
+function CSVDownload({ csvContent }: { csvContent: string }) {
+  return (
+    <button type="button" onClick={() => downloadCSV(csvContent)}>
+      Download
+    </button>
+  );
 }
 
-function removeDuplicates(library: Track[]) {
-  let idToTrack = new Map<string, Track>();
-  library.forEach((t) => idToTrack.set(t.uri, t));
-
-  let tracksToReturn: Track[] = [];
-  for (let track of idToTrack.values()) {
-    tracksToReturn.push(track);
-  }
-
-  return tracksToReturn;
+function Progress({ completion }: { completion: string }) {
+  return (
+    <>
+      <label htmlFor="progress">{completion} % </label>
+      <progress id="progress" max="100.00" value={completion} />
+    </>
+  );
 }
 
 function Export() {
   let [loading, setLoading] = useState(false);
   let [completion, setCompletion] = useState("0.00");
   let [CSVContent, setCSVContent] = useState("");
-  let [token, setToken] = useState<string | undefined>();
+  const token = getTokenFromCookie();
 
-  useEffect(() => {
-    const t = getTokenFromCookie();
-    setToken(t);
-  }, []);
-
-  async function handleClick() {
+  async function exportLibrary() {
     if (!token) return null;
 
     setLoading(true);
@@ -60,64 +56,17 @@ function Export() {
   }
 
   if (CSVContent) {
-    return <CSVDownload CSVContent={CSVContent} />;
+    return <CSVDownload csvContent={CSVContent} />;
   }
 
   if (token) {
-    return <ExportLibraryButton handleClick={handleClick} />;
-  }
-
-  return <Link to="/">Something is wrong... go home.</Link>;
-}
-
-function ExportLibraryButton({ handleClick }: { handleClick: () => void }) {
-  return (
-    <>
-      <p>Click below to download a CSV of your Spotify liked songs:</p>
-      <button type="button" onClick={handleClick}>
-        Export Library
-      </button>
-    </>
-  );
-}
-
-function CSVDownload({ CSVContent }: { CSVContent: string }) {
-  function handleClick() {
-    const blob = new Blob([CSVContent], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute(
-      "download",
-      `library_export_${new Date(Date.now()).toISOString()}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    URL.revokeObjectURL(link.href);
+    return <ExportLibraryButton handleClick={exportLibrary} />;
   }
 
   return (
-    <>
-      <button type="button" onClick={handleClick}>
-        Download
-      </button>
-      <br />
-      <Link to="/">Go home</Link>
-    </>
-  );
-}
-
-function Progress({ completion }: { completion: string }) {
-  return (
-    <>
-      <p>{completion} % Completed...</p>
-      <p>
-        ya it takes a while for big libraries - Spotify API only lets you get 50
-        songs at a time.
-      </p>
-    </>
+    <Link to="/login">
+      Your session has expired, you will need to log in again.
+    </Link>
   );
 }
 

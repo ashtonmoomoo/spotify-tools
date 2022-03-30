@@ -159,3 +159,15 @@ export async function likeSongs(songsToLike: string[], setCompletion: SetComplet
     setCompletion(((currentBatch / batches.length) * 100).toFixed(2));
   }
 }
+
+export function removeDuplicates(library: Track[]) {
+  let idToTrack = new Map<string, Track>();
+  library.forEach((t) => idToTrack.set(t.uri, t));
+
+  let tracksToReturn: Track[] = [];
+  for (let track of idToTrack.values()) {
+    tracksToReturn.push(track);
+  }
+
+  return tracksToReturn;
+}
