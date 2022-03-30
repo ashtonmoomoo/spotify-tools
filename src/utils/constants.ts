@@ -91,21 +91,18 @@ export async function getLibrary(setCompletion: SetCompletion) {
   const body = await user.json();
   const market = body.country;
 
-  /*
-    DEBUG MODE
-  */
-
   const total = await getTotalNumberOfSongs();
-  // const total = 700;
   const numberOfBatches = Math.ceil(total / BATCH_SIZE);
 
   let library: Track[] = [];
-
+  let processed = 0;
   for (let i = 0; i < numberOfBatches; i++) {
     let offset = BATCH_SIZE * i;
+    let limit = Math.min(BATCH_SIZE, total - processed);
 
-    const tracks = await batchFetchTracks({ offset, market });
+    const tracks = await batchFetchTracks({ offset, market, limit });
     library = [...library, ...tracks];
+    processed += limit;
 
     setCompletion(((i / numberOfBatches) * 100).toFixed(2));
   }
