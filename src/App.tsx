@@ -1,23 +1,20 @@
 import { useEffect, useState } from "react";
+import { FeatureList } from "./components/FeatureList";
 import { Link } from "react-router-dom";
 import { getTokenFromCookie, spotifyFetch } from "./utils/constants";
 import "./styles/global.css";
 
 function App() {
-  const [token, setToken] = useState<string | undefined>(undefined);
   const [user, setUser] = useState();
+  const token = getTokenFromCookie();
 
   useEffect(() => {
-    const t = getTokenFromCookie();
-    setToken(t);
-  }, []);
-
-  useEffect(() => {
-    if (!token) return;
-
     const fetchUser = async () => {
       const response = await spotifyFetch({ endpoint: "/me" });
-      if (!response.ok) return;
+      if (!response.ok) {
+        throw new Error("failed to get user's name :(");
+      }
+
       const body = await response.json();
       setUser(body.display_name);
     };
@@ -28,38 +25,9 @@ function App() {
   return (
     <>
       <h1>Spotify Tools</h1>
-      {!token ? <Link to="/login">Login</Link> : null}
-      {user ? <p>Hi, {user}!</p> : null}
-      <ul>
-        <li>
-          <Link to="/export-import">
-            [WIP] Export / Import your liked songs and playlists
-          </Link>
-        </li>
-        <li>
-          <Link to="duplicates">
-            [WIP] Remove duplicate songs and albums from your liked songs and
-            playlists
-          </Link>
-        </li>
-        <li>
-          <Link to="like-missing-songs">
-            [WIP] Like all the songs from albums you have liked
-          </Link>
-        </li>
-        <li>
-          <Link to="remove-liked-songs">
-            [WIP] Experimental: Remove liked songs from albums you <i>don't</i>{" "}
-            like
-          </Link>
-        </li>
-        <li>
-          <Link to="lastfm-tools">
-            [WIP] Create Spotify playlists based on your Last.fm listening
-            history
-          </Link>
-        </li>
-      </ul>
+      {!token && <Link to="/login">Login</Link>}
+      {user && <p>Hi, {user}!</p>}
+      <FeatureList />
     </>
   );
 }
