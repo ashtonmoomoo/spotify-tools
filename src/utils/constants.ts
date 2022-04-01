@@ -21,6 +21,19 @@ export type Track = {
   artist: string;
 };
 
+export function objectToQueryString(obj: any) {
+  return Object.entries(obj)
+    .map(([key, value]) => `${key}=${value}`)
+    .join("&");
+}
+
+// Revisit this method
+export function setTokenCookie(token: string) {
+  document.cookie = `spotify_token=${token};path=/;max-age=${
+    60 * 60
+  };samesite=lax;`;
+}
+
 export function getTokenFromCookie() {
   return document.cookie
   .split("; ")
@@ -143,9 +156,7 @@ export async function likeSongs(songsToLike: string[], setCompletion: SetComplet
   const batches = batchifyArray(songsToLike, BATCH_SIZE);
   let currentBatch = 0;
 
-  for (let batch of batches) {
-    currentBatch++;
-
+  batches.forEach(async (batch) => {
     let response = await spotifyFetch({
       endpoint,
       method,
@@ -156,18 +167,12 @@ export async function likeSongs(songsToLike: string[], setCompletion: SetComplet
       throw new Error("Oh god");
     }
 
-    setCompletion(((currentBatch / batches.length) * 100).toFixed(2));
-  }
+    setCompletion(((++currentBatch / batches.length) * 100).toFixed(2));
+  });
 }
 
-export function removeDuplicates(library: Track[]) {
+export function removeDuplicates(library: Track[]): Track[] {
   let idToTrack = new Map<string, Track>();
   library.forEach((t) => idToTrack.set(t.uri, t));
-
-  let tracksToReturn: Track[] = [];
-  for (let track of idToTrack.values()) {
-    tracksToReturn.push(track);
-  }
-
-  return tracksToReturn;
+  return [...idToTrack.values()];
 }

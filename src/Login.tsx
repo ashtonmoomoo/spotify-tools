@@ -1,17 +1,15 @@
 import { Buffer } from "buffer";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { objectToQueryString, setTokenCookie } from "./utils/constants";
 
-function objectToQueryString(obj: any) {
-  return Object.entries(obj)
-    .map(([key, value]) => `${key}=${value}`)
-    .join("&");
-}
+// brooo you can't do this
+const clientId = process.env.REACT_APP_CLIENT_ID;
+const clientSecret = process.env.REACT_APP_CLIENT_SECRET;
+const redirectUri = process.env.REACT_APP_REDIRECT_URI;
 
 function getAuthUrl() {
   const spotifyAuthEndpoint = "https://accounts.spotify.com/authorize?";
-  const clientId = process.env.REACT_APP_CLIENT_ID;
-  const redirectUri = process.env.REACT_APP_REDIRECT_URI;
 
   if (!clientId || !redirectUri) {
     throw new Error("Missing config");
@@ -31,7 +29,6 @@ function getAuthUrl() {
 
 async function getAuthToken(authCode: string) {
   const spotifyTokenEndpoint = "https://accounts.spotify.com/api/token";
-  const redirectUri = process.env.REACT_APP_REDIRECT_URI;
 
   if (!redirectUri) {
     throw new Error("Missing config");
@@ -44,13 +41,10 @@ async function getAuthToken(authCode: string) {
   };
 
   function getEncodedAuthString() {
-    const clientId = process.env.REACT_APP_CLIENT_ID;
-    const clientSecret = process.env.REACT_APP_CLIENT_SECRET;
-    const encoded = Buffer.from(clientId + ":" + clientSecret).toString(
+    const encoded = Buffer.from(`${clientId}:${clientSecret}`).toString(
       "base64"
     );
-
-    return "Basic " + encoded;
+    return `Basic ${encoded}`;
   }
 
   const response = await fetch(spotifyTokenEndpoint, {
@@ -69,35 +63,27 @@ function LoginButton() {
   return <a href={getAuthUrl()}>Log in with Spotify</a>;
 }
 
-function setTokenCookie(token: string) {
-  document.cookie = `spotify_token=${token};path=/;max-age=${
-    60 * 60
-  };samesite=lax;`;
-}
-
 function Login() {
-  const url = new URL(window.location.href);
-  const authCode = url.searchParams.get("code");
-  let [authToken, setAuthToken] = useState<string>("");
+  const authCode = new URL(window.location.href).searchParams.get("code");
+  let [authToken, setAuthToken] = useState<string>();
 
   useEffect(() => {
     if (!authCode) return;
 
     const fetchAuthToken = async () => {
       const response = await getAuthToken(authCode);
-      if (!response.ok) throw new Error("Failed to get access token :(");
+      if (!response.ok) {
+        throw new Error("Failed to get access token :(");
+      }
 
       const body = await response.json();
 
       setAuthToken(body["access_token"]);
+      setTokenCookie(body["access_token"]);
     };
 
     fetchAuthToken();
   }, [authCode]);
-
-  if (authToken) {
-    setTokenCookie(authToken);
-  }
 
   return <>{!authToken ? <LoginButton /> : <Link to="/">Go Home</Link>}</>;
 }
