@@ -21,12 +21,6 @@ export type Track = {
   artist: string;
 };
 
-export function objectToQueryString(obj: any) {
-  return Object.entries(obj)
-    .map(([key, value]) => `${key}=${value}`)
-    .join("&");
-}
-
 // Revisit this method
 export function setTokenCookie(token: string) {
   document.cookie = `spotify_token=${token};path=/;max-age=${
