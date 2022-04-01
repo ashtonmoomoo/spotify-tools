@@ -37,14 +37,18 @@ function getAuthUrl() {
 
 function App() {
   const [user, setUser] = useState();
-  // sort this shit out
-  const token =
-    getTokenFromCookie() ||
-    new URLSearchParams(window.location.search).get("token");
+  const [hasToken, setHasToken] = useState(false);
 
-  if (token) {
-    setTokenCookie(token);
-  }
+  useEffect(() => {
+    const token =
+      getTokenFromCookie() ||
+      new URLSearchParams(window.location.search).get("token");
+
+    if (token) {
+      setTokenCookie(token);
+      setHasToken(true);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -57,13 +61,15 @@ function App() {
       setUser(body.display_name);
     };
 
-    fetchUser();
-  }, [token]);
+    if (hasToken) {
+      fetchUser();
+    }
+  }, [hasToken]);
 
   return (
     <>
       <h1>Spotify Tools</h1>
-      {!token && <a href={getAuthUrl()}>Login</a>}
+      {!hasToken && <a href={getAuthUrl()}>Login</a>}
       {user && <p>Hi, {user}!</p>}
       <FeatureList />
     </>
