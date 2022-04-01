@@ -68,5 +68,5 @@ func handleGet(c *gin.Context) {
 func main() {
 	router := gin.Default()
 	router.GET("/login", handleGet)
-	router.Run(":8080")
+	router.Run(":" + os.Getenv("PORT"))
 }
