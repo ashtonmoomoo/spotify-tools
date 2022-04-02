@@ -1,2 +1,2 @@
-web: npm start
-web.1: bin/main
+web.1: npm start
+web.2: bin/main
