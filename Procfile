@@ -1,2 +1,2 @@
 web: npm start
-api: backend/backend
+web.1: bin/main
