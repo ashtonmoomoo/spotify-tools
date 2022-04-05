@@ -64,9 +64,7 @@ function Export() {
   }
 
   return (
-    <Link to="/login">
-      Your session has expired, you will need to log in again.
-    </Link>
+    <Link to="/">Your session has expired, you will need to log in again.</Link>
   );
 }
 

@@ -25,7 +25,7 @@ function getAuthUrl() {
 
   const params = {
     client_id: clientId,
-    response_type: "code",
+    response_type: "token",
     redirect_uri: redirectUri,
     scope: "user-library-modify user-library-read user-read-private",
   };
@@ -35,20 +35,27 @@ function getAuthUrl() {
   return spotifyAuthEndpoint + queryString;
 }
 
+function getTokenFromUrl() {
+  return window.location.hash
+    ?.replace("#", "")
+    .split("&")
+    .filter((x) => x.startsWith("access_token"))[0]
+    ?.split("=")[1];
+}
+
 function App() {
   const [user, setUser] = useState();
-  const [hasToken, setHasToken] = useState(false);
+  const [token, setToken] = useState<string | undefined>();
 
   useEffect(() => {
-    const token =
-      getTokenFromCookie() ||
-      new URLSearchParams(window.location.search).get("token");
+    setToken(getTokenFromCookie() || getTokenFromUrl());
+  }, []);
 
+  useEffect(() => {
     if (token) {
       setTokenCookie(token);
-      setHasToken(true);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -61,15 +68,15 @@ function App() {
       setUser(body.display_name);
     };
 
-    if (hasToken) {
+    if (token) {
       fetchUser();
     }
-  }, [hasToken]);
+  }, [token]);
 
   return (
     <>
       <h1>Spotify Tools</h1>
-      {!hasToken && <a href={getAuthUrl()}>Login</a>}
+      {!token && <a href={getAuthUrl()}>Login</a>}
       {user && <p>Hi, {user}!</p>}
       <FeatureList />
     </>
