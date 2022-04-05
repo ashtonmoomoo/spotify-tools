@@ -6,23 +6,26 @@ import {
   removeDuplicates,
 } from "../utils/constants";
 import { downloadCSV, getCSV } from "../utils/csvTools";
+import Button from "./Button";
 
 function ExportLibraryButton({ handleClick }: { handleClick: () => void }) {
   return (
     <>
       <p>Click below to download a CSV of your Spotify liked songs:</p>
-      <button type="button" onClick={handleClick}>
-        Export Library
-      </button>
+      <Button
+        buttonProps={{ type: "button", onClick: handleClick }}
+        text="Export Library"
+      />
     </>
   );
 }
 
 function CSVDownload({ csvContent }: { csvContent: string }) {
   return (
-    <button type="button" onClick={() => downloadCSV(csvContent)}>
-      Download
-    </button>
+    <Button
+      buttonProps={{ type: "button", onClick: () => downloadCSV(csvContent) }}
+      text="Download"
+    />
   );
 }
 

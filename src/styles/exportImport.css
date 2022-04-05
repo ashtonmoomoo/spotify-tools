@@ -1,0 +1,32 @@
+span {
+  font-size: 32px;
+}
+
+.non-header {
+  font-size: 24px;
+}
+
+.selected {
+  font-weight: 700;
+  cursor: default;
+  text-decoration: none;
+}
+
+.not-selected {
+  cursor: pointer;
+}
+
+.not-selected:hover {
+  text-decoration: underline;
+}
+
+#return-home {
+  font-weight: 600;
+  color: black;
+  text-decoration: none;
+}
+
+#return-home:hover {
+  text-decoration: underline;
+}
+

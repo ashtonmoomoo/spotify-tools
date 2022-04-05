@@ -52,7 +52,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (token) {
+    if (token && !getTokenFromCookie()) {
       setTokenCookie(token);
     }
   }, [token]);
