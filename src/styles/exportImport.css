@@ -30,3 +30,13 @@ span {
   text-decoration: underline;
 }
 
+.hidden-input {
+  opacity: 0;
+}
+
+.csv-upload {
+  margin-top: 1em;
+  display: block;
+  width: 120px;
+}
+

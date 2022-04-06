@@ -22,3 +22,9 @@ body {
   background-color: rgb(2, 90, 2);
   cursor: pointer;
 }
+
+.form-button:disabled {
+  background-color: rgb(74, 87, 74);
+  cursor: not-allowed;
+}
+

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getLibrary, likeSongs } from "../utils/constants";
 import { Track } from "../utils/constants";
+import Button from "./Button";
 
 function isSpotifyTrackId(str: string) {
   const pattern = /spotify:track:[a-zA-Z0-9]{22}/;
@@ -80,7 +81,12 @@ function Import() {
         Upload a CSV file with Spotify track IDs (e.g.
         spotify:track:4cOdK2wGLETKBW3PvgPWqT) in the first column.
       </p>
+      <label htmlFor="csv-upload" className="form-button csv-upload">
+        Upload CSV
+      </label>
       <input
+        id="csv-upload"
+        className="hidden-input"
         type="file"
         accept=".csv"
         onChange={handleUpload}
@@ -113,13 +119,14 @@ function Import() {
             onChange={() => setAcceptedTerms(!acceptedTerms)}
           />
           <br />
-          <button
-            type="button"
-            disabled={!acceptedTerms || progressRestoringLibrary !== "0.00"}
-            onClick={likeMissingSongs}
-          >
-            Like missing songs
-          </button>
+          <Button
+            buttonProps={{
+              type: "button",
+              disabled: !acceptedTerms || progressRestoringLibrary !== "0.00",
+              onClick: likeMissingSongs,
+            }}
+            text="Like missing songs"
+          />
         </>
       ) : null}
     </>
