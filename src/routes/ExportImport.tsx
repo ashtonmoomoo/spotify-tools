@@ -1,8 +1,10 @@
 import { useState } from "react";
+import ExpiredSession from "../components/ExpiredSession";
 import Export from "../components/Export";
 import Import from "../components/Import";
 
 import "../styles/exportImport.css";
+import { getTokenFromCookie } from "../utils/constants";
 
 function ExportImport() {
   const [exportVisible, setExportVisible] = useState(true);
@@ -23,6 +25,10 @@ function ExportImport() {
 
     document.getElementById("export")?.classList.remove("selected");
     document.getElementById("export")?.classList.add("not-selected");
+  }
+
+  if (!getTokenFromCookie()) {
+    return <ExpiredSession />;
   }
 
   return (

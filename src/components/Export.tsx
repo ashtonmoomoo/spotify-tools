@@ -7,6 +7,7 @@ import {
 } from "../utils/constants";
 import { downloadCSV, getCSV } from "../utils/csvTools";
 import Button from "./Button";
+import ExpiredSession from "./ExpiredSession";
 
 function ExportLibraryButton({ handleClick }: { handleClick: () => void }) {
   return (
@@ -66,9 +67,7 @@ function Export() {
     return <ExportLibraryButton handleClick={exportLibrary} />;
   }
 
-  return (
-    <Link to="/">Your session has expired, you will need to log in again.</Link>
-  );
+  return <ExpiredSession />;
 }
 
 export default Export;
