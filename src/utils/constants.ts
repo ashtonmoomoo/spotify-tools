@@ -119,8 +119,7 @@ export function batchifyArray<T>(arrayToBatchify: T[], batchSize: number): T[][]
 
 export async function getLibrary(setCompletion?: SetCompletion) {
   const market = await getUserMarket();
-  // const total = await getTotalNumberOfSongs();
-  const total = 200;
+  const total = process.env.NODE_ENV === "production" ? await getTotalNumberOfSongs() : 200;
 
   const numberOfBatches = Math.ceil(total / BATCH_SIZE);
   let processed = 0;
