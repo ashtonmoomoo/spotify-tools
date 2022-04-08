@@ -117,9 +117,10 @@ export function batchifyArray<T>(arrayToBatchify: T[], batchSize: number): T[][]
   return result;
 }
 
-export async function getLibrary(setCompletion: SetCompletion) {
+export async function getLibrary(setCompletion?: SetCompletion) {
   const market = await getUserMarket();
-  const total = await getTotalNumberOfSongs();
+  // const total = await getTotalNumberOfSongs();
+  const total = 200;
 
   const numberOfBatches = Math.ceil(total / BATCH_SIZE);
   let processed = 0;
@@ -134,7 +135,9 @@ export async function getLibrary(setCompletion: SetCompletion) {
     library.push(...tracks);
     processed += limit;
 
-    setCompletion(((i / numberOfBatches) * 100).toFixed(2));
+    if (setCompletion) {
+      setCompletion(((i / numberOfBatches) * 100).toFixed(2));
+    }
   }
 
   return library;
@@ -144,7 +147,12 @@ function getTrackId(uri: string) {
   return uri.split(':')[2];
 }
 
-export async function likeSongs(songsToLike: string[], setCompletion: SetCompletion) {
+export function isSpotifyTrackId(str: string) {
+  const pattern = /spotify:track:[a-zA-Z0-9]{22}/;
+  return pattern.test(str);
+}
+
+export async function likeSongs(songsToLike: string[], setCompletion?: SetCompletion) {
   const endpoint = '/me/tracks';
   const method = "PUT";
   const batches = batchifyArray(songsToLike, BATCH_SIZE);
@@ -161,12 +169,31 @@ export async function likeSongs(songsToLike: string[], setCompletion: SetComplet
       throw new Error("Oh god");
     }
 
-    setCompletion(((++currentBatch / batches.length) * 100).toFixed(2));
+    if (setCompletion) {
+      setCompletion(((++currentBatch / batches.length) * 100).toFixed(2));
+    }
   });
 }
 
-export function removeDuplicates(library: Track[]): Track[] {
+export function removeDuplicateTracks(library: Track[]): Track[] {
   let idToTrack = new Map<string, Track>();
   library.forEach((t) => idToTrack.set(t.uri, t));
   return [...idToTrack.values()];
+}
+
+export function findMissingSongs(currentLibrary: string[], source: string[]) {
+  let currentLibrarySet = new Set(currentLibrary);
+  return source.filter((song) => !currentLibrarySet.has(song));
+}
+
+export async function readFile(file: File): Promise<string> {
+  let result = await new Promise<string>((resolve, reject) => {
+    let reader = new FileReader();
+    reader.readAsText(file, "utf-8");
+    // fml it's an Event but EventTarget doesn't know it has a result prop
+    reader.onload = (event: any) => resolve(event?.target?.result);
+    reader.onerror = (err: any) => reject(err);
+  });
+
+  return result;
 }
