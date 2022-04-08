@@ -117,9 +117,10 @@ export function batchifyArray<T>(arrayToBatchify: T[], batchSize: number): T[][]
   return result;
 }
 
-export async function getLibrary(setCompletion: SetCompletion) {
+export async function getLibrary(setCompletion?: SetCompletion) {
   const market = await getUserMarket();
-  const total = await getTotalNumberOfSongs();
+  // const total = await getTotalNumberOfSongs();
+  const total = 200;
 
   const numberOfBatches = Math.ceil(total / BATCH_SIZE);
   let processed = 0;
@@ -134,7 +135,9 @@ export async function getLibrary(setCompletion: SetCompletion) {
     library.push(...tracks);
     processed += limit;
 
-    setCompletion(((i / numberOfBatches) * 100).toFixed(2));
+    if (setCompletion) {
+      setCompletion(((i / numberOfBatches) * 100).toFixed(2));
+    }
   }
 
   return library;
@@ -142,6 +145,11 @@ export async function getLibrary(setCompletion: SetCompletion) {
 
 function getTrackId(uri: string) {
   return uri.split(':')[2];
+}
+
+export function isSpotifyTrackId(str: string) {
+  const pattern = /spotify:track:[a-zA-Z0-9]{22}/;
+  return pattern.test(str);
 }
 
 export async function likeSongs(songsToLike: string[], setCompletion: SetCompletion) {

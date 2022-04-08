@@ -1,4 +1,4 @@
-import { Track } from './constants';
+import { isSpotifyTrackId, Track } from './constants';
 
 export function prepareSongForCSV(song: Track) {
   let row: string[] = [];
@@ -33,4 +33,20 @@ export function downloadCSV(csvContent: string) {
   document.body.appendChild(link);
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+export function parseCSV(CSVContent: string) {
+  let rows = CSVContent.split("\n");
+  let trackIds: string[] = [];
+
+  rows.forEach((row) => {
+    let entries = row.split(",");
+    entries.forEach((entry) => {
+      if (isSpotifyTrackId(entry)) {
+        trackIds.push(entry.replaceAll('"', ""));
+      }
+    });
+  });
+
+  return trackIds;
 }
