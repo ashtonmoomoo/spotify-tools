@@ -35,7 +35,7 @@ export function downloadCSV(csvContent: string) {
   URL.revokeObjectURL(link.href);
 }
 
-export function parseCSV(CSVContent: string) {
+export function parseCSVIntoTrackIds(CSVContent: string) {
   let rows = CSVContent.split("\n");
   let trackIds: string[] = [];
 

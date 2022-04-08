@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
-import { getLibrary, Track } from "../utils/constants";
-import { parseCSV } from "../utils/csvTools";
+import {
+  findMissingSongs,
+  getLibrary,
+  readFile,
+  Track,
+} from "../utils/constants";
+import { parseCSVIntoTrackIds } from "../utils/csvTools";
 import {
   UploadCSV,
   PresentResults,
@@ -27,22 +32,22 @@ function Import() {
   }, [okToFetch]);
 
   useEffect(() => {
-    const readFile = (file: File) => {
-      let reader = new FileReader();
-      reader.readAsText(file, "utf-8");
-      reader.onload = (event: any) => {
-        setTrackIds(parseCSV(event?.target?.result));
-      };
+    const fetchSongsFromCSV = async (file: File) => {
+      const csvContent = await readFile(file);
+      const parsedTrackIds = parseCSVIntoTrackIds(csvContent);
+      setTrackIds(parsedTrackIds);
     };
 
     if (file) {
-      readFile(file);
+      fetchSongsFromCSV(file);
     }
   }, [file]);
 
   useEffect(() => {
-    let currentLibrarySet = new Set(currentLibrary.map((x) => x.uri));
-    const missingSongs = [...trackIds].filter((x) => !currentLibrarySet.has(x));
+    const missingSongs = findMissingSongs(
+      currentLibrary.map((x) => x.uri),
+      trackIds
+    );
     setSongsToLike(missingSongs);
   }, [currentLibrary, trackIds]);
 

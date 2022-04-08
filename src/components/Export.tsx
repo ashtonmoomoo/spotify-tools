@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   getLibrary,
   getTokenFromCookie,
-  removeDuplicates,
+  removeDuplicateTracks,
 } from "../utils/constants";
 import { downloadCSV, getCSV } from "../utils/csvTools";
 import Button from "./Button";
@@ -49,7 +49,7 @@ function Export() {
 
     setLoading(true);
     const response = await getLibrary(setCompletion);
-    const content = getCSV(removeDuplicates(response));
+    const content = getCSV(removeDuplicateTracks(response));
     setCSVContent(content);
     setLoading(false);
   }
