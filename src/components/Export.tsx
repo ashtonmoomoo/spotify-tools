@@ -1,9 +1,6 @@
 import { useState } from "react";
-import {
-  getLibrary,
-  getTokenFromCookie,
-  removeDuplicateTracks,
-} from "../utils/constants";
+import { getLibrary, removeDuplicateTracks } from "../utils/constants";
+import { getTokenFromCookie } from "../utils/tools";
 import { downloadCSV, getCSV } from "../utils/csvTools";
 import Button from "./Button";
 import ExpiredSession from "./ExpiredSession";

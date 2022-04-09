@@ -1,3 +1,5 @@
+import { getTokenFromCookie, batchifyArray } from "./tools";
+
 const BATCH_SIZE = 50; // API limit
 
 type FetchParams = {
@@ -6,10 +8,11 @@ type FetchParams = {
   options?: string;
 }
 
-type FetchTrackParams = {
+type BatchFetchParams = {
+  endpoint: string;
   limit: number;
   offset: number;
-  market: string;
+  market?: string;
 };
 
 type SetCompletion = (completion: string) => void;
@@ -20,20 +23,6 @@ export type Track = {
   album: string;
   artist: string;
 };
-
-// Revisit this method
-export function setTokenCookie(token: string) {
-  document.cookie = `spotify_token=${token};path=/;max-age=${
-    60 * 60
-  };samesite=lax;`;
-}
-
-export function getTokenFromCookie() {
-  return document.cookie
-  .split("; ")
-  .find((row) => row.startsWith("spotify_token"))
-  ?.split("=")[1];
-}
 
 export async function spotifyFetch({endpoint, options='', method="GET"}: FetchParams) {
   const spotifyApiBase = "https://api.spotify.com/v1";
@@ -47,13 +36,12 @@ export async function spotifyFetch({endpoint, options='', method="GET"}: FetchPa
   });
 }
 
-export async function getTotalNumberOfSongs() {
-  const endpoint = "/me/tracks";
+export async function getTotalNumberOfItems(endpoint: string) {
   const options = "?limit=1";
   const response = await spotifyFetch({ endpoint, options });
 
   if (!response.ok) {
-    throw new Error("Something went wrong fetching library count");
+    throw new Error(`Something went wrong fetching count for endpoint ${endpoint}`);
   }
 
   const { total } = await response.json();
@@ -61,22 +49,8 @@ export async function getTotalNumberOfSongs() {
   return total;
 }
 
-async function batchFetchTracks({
-  limit = 50,
-  offset = 0,
-  market
-}: Partial<FetchTrackParams>): Promise<Track[]> {
-  const endpoint = "/me/tracks";
-  const options = `?limit=${limit}&offset=${offset}&market=${market}`;
-  const response = await spotifyFetch({ endpoint, options });
-
-  if (!response.ok) {
-    throw new Error("Something went wrong fetching tracks :(");
-  }
-
-  const { items } = await response.json();
-
-  const itemsReduced = items.map((item: any) => {
+function responseToTrack(items: any): Track[] {
+  return items.map((item: any) => {
     return {
       uri: item.track.uri,
       name: item.track.name,
@@ -84,42 +58,46 @@ async function batchFetchTracks({
       artist: item.track.artists[0].name,
     };
   });
-
-  return itemsReduced;
 }
 
-async function getUserMarket() {
-  const user = await spotifyFetch({ endpoint: "/me" })
-  const body = await user.json();
-  return body.country;
-}
+async function batchFetchItems({
+  endpoint,
+  limit = BATCH_SIZE,
+  offset = 0,
+  market
+}: BatchFetchParams): Promise<any> {
+  const options = `?limit=${limit}&offset=${offset}&market=${market}`;
+  const response = await spotifyFetch({ endpoint, options });
 
-export function batchifyArray<T>(arrayToBatchify: T[], batchSize: number): T[][] {
-  let result: T[][] = [];
-  const total = arrayToBatchify.length;
-
-  const numberOfBatches = Math.ceil(total / batchSize);
-  let processed = 0;
-
-  for (let batchNumber = 0; batchNumber < numberOfBatches; batchNumber++) {
-    let offset = batchNumber * batchSize;
-    let thisBatchSize = Math.min(batchSize, total - processed);
-    let batch: T[] = [];
-
-    for (let i = 0; i < thisBatchSize; i++) {
-      batch.push(arrayToBatchify[offset + i]);
-      processed++;
-    }
-
-    result.push(batch);
+  if (!response.ok) {
+    throw new Error(`Something went wrong fetching items for endpoint ${endpoint}`);
   }
 
-  return result;
+  const { items } = await response.json();
+
+  return items;
+}
+
+async function getUser() {
+  const user = await spotifyFetch({ endpoint: "/me" })
+  const body = await user.json();
+  return body;
+}
+
+export async function getUsername() {
+  const user = await getUser();
+  return user.display_name;
+}
+
+export async function getUserMarket() {
+  const user = await getUser();
+  return user.country;
 }
 
 export async function getLibrary(setCompletion?: SetCompletion) {
   const market = await getUserMarket();
-  const total = process.env.NODE_ENV === "production" ? await getTotalNumberOfSongs() : 200;
+  const endpoint = "/me/tracks";
+  const total = process.env.NODE_ENV === "production" ? await getTotalNumberOfItems(endpoint) : 200;
 
   const numberOfBatches = Math.ceil(total / BATCH_SIZE);
   let processed = 0;
@@ -129,9 +107,9 @@ export async function getLibrary(setCompletion?: SetCompletion) {
     let offset = BATCH_SIZE * i;
     let limit = Math.min(BATCH_SIZE, total - processed);
 
-    const tracks = await batchFetchTracks({ offset, market, limit });
+    const tracks = await batchFetchItems({ endpoint, offset, market, limit });
 
-    library.push(...tracks);
+    library.push(...responseToTrack(tracks));
     processed += limit;
 
     if (setCompletion) {
@@ -152,15 +130,13 @@ export function isSpotifyTrackId(str: string) {
 }
 
 export async function likeSongs(songsToLike: string[], setCompletion?: SetCompletion) {
-  const endpoint = '/me/tracks';
-  const method = "PUT";
   const batches = batchifyArray(songsToLike, BATCH_SIZE);
   let currentBatch = 0;
 
   batches.forEach(async (batch) => {
     let response = await spotifyFetch({
-      endpoint,
-      method,
+      endpoint: "/me/tracks",
+      method: "PUT",
       options: `?ids=${batch.map(song => getTrackId(song)).join(',')}`,
     });
 
@@ -183,16 +159,4 @@ export function removeDuplicateTracks(library: Track[]): Track[] {
 export function findMissingSongs(currentLibrary: string[], source: string[]) {
   let currentLibrarySet = new Set(currentLibrary);
   return source.filter((song) => !currentLibrarySet.has(song));
-}
-
-export async function readFile(file: File): Promise<string> {
-  let result = await new Promise<string>((resolve, reject) => {
-    let reader = new FileReader();
-    reader.readAsText(file, "utf-8");
-    // fml it's an Event but EventTarget doesn't know it has a result prop
-    reader.onload = (event: any) => resolve(event?.target?.result);
-    reader.onerror = (err: any) => reject(err);
-  });
-
-  return result;
 }
