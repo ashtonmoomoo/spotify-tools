@@ -1,43 +1,20 @@
+import { getTokenFromCookie, batchifyArray, objectToQueryString } from "./tools";
+
 const BATCH_SIZE = 50; // API limit
 
-type FetchParams = {
-  endpoint: string;
-  method?: "GET" | "PUT" | "POST";
-  options?: string;
-}
+type HTTPMethod = "GET" | "POST" | "PUT";
 
-type FetchTrackParams = {
-  limit: number;
-  offset: number;
-  market: string;
-};
+type OptionsObject = {
+  ids?: string;
+  market?: string;
+  limit?: number;
+  offset?: number;
+}
 
 type SetCompletion = (completion: string) => void;
 
-export type Track = {
-  uri: string;
-  name: string;
-  album: string;
-  artist: string;
-};
-
-// Revisit this method
-export function setTokenCookie(token: string) {
-  document.cookie = `spotify_token=${token};path=/;max-age=${
-    60 * 60
-  };samesite=lax;`;
-}
-
-export function getTokenFromCookie() {
-  return document.cookie
-  .split("; ")
-  .find((row) => row.startsWith("spotify_token"))
-  ?.split("=")[1];
-}
-
-export async function spotifyFetch({endpoint, options='', method="GET"}: FetchParams) {
-  const spotifyApiBase = "https://api.spotify.com/v1";
-  return fetch(spotifyApiBase + endpoint + options, {
+export async function spotifyFetch(endpoint: string, method: HTTPMethod = "GET", options: OptionsObject = {}) {
+  return fetch(`https://api.spotify.com/v1${endpoint}?${objectToQueryString(options)}`, {
     method,
     headers: {
       Authorization: `Bearer ${getTokenFromCookie()}`,
@@ -47,97 +24,40 @@ export async function spotifyFetch({endpoint, options='', method="GET"}: FetchPa
   });
 }
 
-export async function getTotalNumberOfSongs() {
-  const endpoint = "/me/tracks";
-  const options = "?limit=1";
-  const response = await spotifyFetch({ endpoint, options });
-
-  if (!response.ok) {
-    throw new Error("Something went wrong fetching library count");
-  }
-
-  const { total } = await response.json();
-
-  return total;
-}
-
-async function batchFetchTracks({
-  limit = 50,
-  offset = 0,
-  market
-}: Partial<FetchTrackParams>): Promise<Track[]> {
-  const endpoint = "/me/tracks";
-  const options = `?limit=${limit}&offset=${offset}&market=${market}`;
-  const response = await spotifyFetch({ endpoint, options });
-
-  if (!response.ok) {
-    throw new Error("Something went wrong fetching tracks :(");
-  }
-
-  const { items } = await response.json();
-
-  const itemsReduced = items.map((item: any) => {
-    return {
-      uri: item.track.uri,
-      name: item.track.name,
-      album: item.track.album.name,
-      artist: item.track.artists[0].name,
-    };
-  });
-
-  return itemsReduced;
-}
-
-async function getUserMarket() {
-  const user = await spotifyFetch({ endpoint: "/me" })
+async function getUser(): Promise<SpotifyApi.CurrentUsersProfileResponse> {
+  const user = await spotifyFetch("/me")
   const body = await user.json();
-  return body.country;
+  return body;
 }
 
-export function batchifyArray<T>(arrayToBatchify: T[], batchSize: number): T[][] {
-  let result: T[][] = [];
-  const total = arrayToBatchify.length;
+export async function getUsername(): Promise<string | undefined> {
+  const user = await getUser();
+  return user?.display_name;
+}
 
-  const numberOfBatches = Math.ceil(total / batchSize);
-  let processed = 0;
-
-  for (let batchNumber = 0; batchNumber < numberOfBatches; batchNumber++) {
-    let offset = batchNumber * batchSize;
-    let thisBatchSize = Math.min(batchSize, total - processed);
-    let batch: T[] = [];
-
-    for (let i = 0; i < thisBatchSize; i++) {
-      batch.push(arrayToBatchify[offset + i]);
-      processed++;
-    }
-
-    result.push(batch);
-  }
-
-  return result;
+export async function getUserMarket(): Promise<string | undefined> {
+  const user = await getUser();
+  return user?.country;
 }
 
 export async function getLibrary(setCompletion?: SetCompletion) {
   const market = await getUserMarket();
-  const total = process.env.NODE_ENV === "production" ? await getTotalNumberOfSongs() : 200;
+  let library: SpotifyApi.TrackObjectFull[] = [];
+  let next: string | null;
+  let offset = 0;
 
-  const numberOfBatches = Math.ceil(total / BATCH_SIZE);
-  let processed = 0;
-  let library: Track[] = [];
+  do {
+    let response = await spotifyFetch("/me/tracks", "GET", {limit: BATCH_SIZE, offset, market });
+    let body: SpotifyApi.UsersSavedTracksResponse = await response.json();
+    library.push(...body.items.map((savedTrack) => savedTrack.track)); // tidy this line up
 
-  for (let i = 0; i < numberOfBatches; i++) {
-    let offset = BATCH_SIZE * i;
-    let limit = Math.min(BATCH_SIZE, total - processed);
-
-    const tracks = await batchFetchTracks({ offset, market, limit });
-
-    library.push(...tracks);
-    processed += limit;
+    next = body.next;
+    offset += BATCH_SIZE;
 
     if (setCompletion) {
-      setCompletion(((i / numberOfBatches) * 100).toFixed(2));
+      setCompletion(((offset / body.total) * 100).toFixed(2));
     }
-  }
+  } while (next);
 
   return library;
 }
@@ -152,16 +72,12 @@ export function isSpotifyTrackId(str: string) {
 }
 
 export async function likeSongs(songsToLike: string[], setCompletion?: SetCompletion) {
-  const endpoint = '/me/tracks';
-  const method = "PUT";
   const batches = batchifyArray(songsToLike, BATCH_SIZE);
   let currentBatch = 0;
 
   batches.forEach(async (batch) => {
-    let response = await spotifyFetch({
-      endpoint,
-      method,
-      options: `?ids=${batch.map(song => getTrackId(song)).join(',')}`,
+    let response = await spotifyFetch("/me/tracks", "PUT", {
+      ids: batch.map(song => getTrackId(song)).join(',')
     });
 
     if (!response.ok) {
@@ -174,25 +90,13 @@ export async function likeSongs(songsToLike: string[], setCompletion?: SetComple
   });
 }
 
-export function removeDuplicateTracks(library: Track[]): Track[] {
-  let idToTrack = new Map<string, Track>();
-  library.forEach((t) => idToTrack.set(t.uri, t));
+export function removeDuplicateTracks(library: SpotifyApi.TrackObjectFull[]): SpotifyApi.TrackObjectFull[] {
+  let idToTrack = new Map<string, SpotifyApi.TrackObjectFull>();
+  library.forEach((t) => idToTrack.set(t.id, t));
   return [...idToTrack.values()];
 }
 
 export function findMissingSongs(currentLibrary: string[], source: string[]) {
   let currentLibrarySet = new Set(currentLibrary);
   return source.filter((song) => !currentLibrarySet.has(song));
-}
-
-export async function readFile(file: File): Promise<string> {
-  let result = await new Promise<string>((resolve, reject) => {
-    let reader = new FileReader();
-    reader.readAsText(file, "utf-8");
-    // fml it's an Event but EventTarget doesn't know it has a result prop
-    reader.onload = (event: any) => resolve(event?.target?.result);
-    reader.onerror = (err: any) => reject(err);
-  });
-
-  return result;
 }

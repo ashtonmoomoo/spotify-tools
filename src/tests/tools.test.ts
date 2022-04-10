@@ -1,5 +1,5 @@
 import { randomInt } from "crypto";
-import { batchifyArray } from "../utils/constants";
+import { batchifyArray } from "../utils/tools";
 
 function makeArray(size: number) {
   let result: number[] = [];
