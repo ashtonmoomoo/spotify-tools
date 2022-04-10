@@ -47,14 +47,13 @@ export function batchifyArray<T>(arrayToBatchify: T[], batchSize: number): T[][]
   return result;
 }
 
-function objectToQueryString(obj: any) {
+export function objectToQueryString(obj: any) {
   return Object.entries(obj)
     .map(([key, value]) => `${key}=${value}`)
     .join("&");
 }
 
 export function getAuthUrl() {
-  const spotifyAuthEndpoint = "https://accounts.spotify.com/authorize?";
   const clientId = process.env.REACT_APP_CLIENT_ID;
   const redirectUri = process.env.REACT_APP_REDIRECT_URI;
 
@@ -69,9 +68,7 @@ export function getAuthUrl() {
     scope: "user-library-modify user-library-read user-read-private",
   };
 
-  const queryString = objectToQueryString(params);
-
-  return spotifyAuthEndpoint + queryString;
+  return "https://accounts.spotify.com/authorize?" + objectToQueryString(params);
 }
 
 export function getTokenFromUrl() {
