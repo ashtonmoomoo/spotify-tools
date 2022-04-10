@@ -1,16 +1,21 @@
-import { isSpotifyTrackId, Track } from './constants';
+import { isSpotifyTrackId } from './constants';
 
-export function prepareSongForCSV(song: Track) {
-  let row: string[] = [];
-  for (let field of Object.values(song)) {
-    row.push(`"${field?.replace(/"/g, '""')}"`);
-  }
-
-  return row.join(",") + "\n";
+// I still don't like how these 3 functions work
+function escapeForCSV(field: string) {
+  return `"${field.replace(/"/g, '""')}"`;
 }
 
-export function getCSV(library: Track[]) {
-  let csv = Object.keys(library[0]).join(",") + "\n";
+export function prepareSongForCSV(song: SpotifyApi.TrackObjectFull) {
+  return [
+    song.uri,
+    song.name,
+    song.album.name,
+    song.artists[0].name,
+  ].map(field => escapeForCSV(field)).join(",") + "\n";
+}
+
+export function getCSV(library: SpotifyApi.TrackObjectFull[]) {
+  let csv = "uri,name,album,artist\n";
 
   library.forEach((song) => {
     csv += prepareSongForCSV(song);

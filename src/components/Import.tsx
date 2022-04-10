@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { findMissingSongs, getLibrary, Track } from "../utils/constants";
+import { findMissingSongs, getLibrary } from "../utils/constants";
 import { readFile } from "../utils/tools";
 import { parseCSVIntoTrackIds } from "../utils/csvTools";
 import {
@@ -12,7 +12,9 @@ import {
 function Import() {
   let [file, setFile] = useState<File>();
   let [trackIds, setTrackIds] = useState<string[]>([]);
-  let [currentLibrary, setCurrentLibrary] = useState<Track[]>([]);
+  let [currentLibrary, setCurrentLibrary] = useState<
+    SpotifyApi.TrackObjectFull[]
+  >([]);
   let [songsToLike, setSongsToLike] = useState<string[]>([]);
   let [okToFetch, setOkToFetch] = useState(false);
 

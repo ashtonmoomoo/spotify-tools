@@ -10,7 +10,7 @@ import {
 import "./styles/global.css";
 
 function App() {
-  const [username, setUsername] = useState();
+  const [username, setUsername] = useState<string | undefined>();
   const [token, setToken] = useState<string | undefined>();
 
   useEffect(() => {

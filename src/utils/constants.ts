@@ -8,21 +8,7 @@ type FetchParams = {
   options?: string;
 }
 
-type BatchFetchParams = {
-  endpoint: string;
-  limit: number;
-  offset: number;
-  market?: string;
-};
-
 type SetCompletion = (completion: string) => void;
-
-export type Track = {
-  uri: string;
-  name: string;
-  album: string;
-  artist: string;
-};
 
 export async function spotifyFetch({endpoint, options='', method="GET"}: FetchParams) {
   const spotifyApiBase = "https://api.spotify.com/v1";
@@ -36,86 +22,41 @@ export async function spotifyFetch({endpoint, options='', method="GET"}: FetchPa
   });
 }
 
-export async function getTotalNumberOfItems(endpoint: string) {
-  const options = "?limit=1";
-  const response = await spotifyFetch({ endpoint, options });
-
-  if (!response.ok) {
-    throw new Error(`Something went wrong fetching count for endpoint ${endpoint}`);
-  }
-
-  const { total } = await response.json();
-
-  return total;
-}
-
-function responseToTrack(items: any): Track[] {
-  return items.map((item: any) => {
-    return {
-      uri: item.track.uri,
-      name: item.track.name,
-      album: item.track.album.name,
-      artist: item.track.artists[0].name,
-    };
-  });
-}
-
-async function batchFetchItems({
-  endpoint,
-  limit = BATCH_SIZE,
-  offset = 0,
-  market
-}: BatchFetchParams): Promise<any> {
-  const options = `?limit=${limit}&offset=${offset}&market=${market}`;
-  const response = await spotifyFetch({ endpoint, options });
-
-  if (!response.ok) {
-    throw new Error(`Something went wrong fetching items for endpoint ${endpoint}`);
-  }
-
-  const { items } = await response.json();
-
-  return items;
-}
-
-async function getUser() {
+async function getUser(): Promise<SpotifyApi.CurrentUsersProfileResponse> {
   const user = await spotifyFetch({ endpoint: "/me" })
   const body = await user.json();
   return body;
 }
 
-export async function getUsername() {
+export async function getUsername(): Promise<string | undefined> {
   const user = await getUser();
-  return user.display_name;
+  return user?.display_name;
 }
 
-export async function getUserMarket() {
+export async function getUserMarket(): Promise<string | undefined> {
   const user = await getUser();
-  return user.country;
+  return user?.country;
 }
 
 export async function getLibrary(setCompletion?: SetCompletion) {
   const market = await getUserMarket();
   const endpoint = "/me/tracks";
-  const total = process.env.NODE_ENV === "production" ? await getTotalNumberOfItems(endpoint) : 200;
+  let library: SpotifyApi.TrackObjectFull[] = [];
+  let next: string | null;
+  let offset = 0;
 
-  const numberOfBatches = Math.ceil(total / BATCH_SIZE);
-  let processed = 0;
-  let library: Track[] = [];
+  do {
+    let response = await spotifyFetch({ endpoint, options: `?limit=${BATCH_SIZE}&market=${market}&offset=${offset}`}); // come back to this - use object to params method and pass in object instead
+    let body: SpotifyApi.UsersSavedTracksResponse = await response.json();
+    library.push(...body.items.map((savedTrack) => savedTrack.track)); // tidy this line up
 
-  for (let i = 0; i < numberOfBatches; i++) {
-    let offset = BATCH_SIZE * i;
-    let limit = Math.min(BATCH_SIZE, total - processed);
-
-    const tracks = await batchFetchItems({ endpoint, offset, market, limit });
-
-    library.push(...responseToTrack(tracks));
-    processed += limit;
+    next = body.next;
+    offset += BATCH_SIZE;
 
     if (setCompletion) {
-      setCompletion(((i / numberOfBatches) * 100).toFixed(2));
+      setCompletion(((offset / body.total) * 100).toFixed(2));
     }
-  }
+  } while (next);
 
   return library;
 }
@@ -150,9 +91,9 @@ export async function likeSongs(songsToLike: string[], setCompletion?: SetComple
   });
 }
 
-export function removeDuplicateTracks(library: Track[]): Track[] {
-  let idToTrack = new Map<string, Track>();
-  library.forEach((t) => idToTrack.set(t.uri, t));
+export function removeDuplicateTracks(library: SpotifyApi.TrackObjectFull[]): SpotifyApi.TrackObjectFull[] {
+  let idToTrack = new Map<string, SpotifyApi.TrackObjectFull>();
+  library.forEach((t) => idToTrack.set(t.id, t));
   return [...idToTrack.values()];
 }
 
