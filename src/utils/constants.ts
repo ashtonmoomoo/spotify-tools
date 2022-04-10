@@ -1,18 +1,20 @@
-import { getTokenFromCookie, batchifyArray } from "./tools";
+import { getTokenFromCookie, batchifyArray, objectToQueryString } from "./tools";
 
 const BATCH_SIZE = 50; // API limit
 
-type FetchParams = {
-  endpoint: string;
-  method?: "GET" | "PUT" | "POST";
-  options?: string;
+type HTTPMethod = "GET" | "POST" | "PUT";
+
+type OptionsObject = {
+  ids?: string;
+  market?: string;
+  limit?: number;
+  offset?: number;
 }
 
 type SetCompletion = (completion: string) => void;
 
-export async function spotifyFetch({endpoint, options='', method="GET"}: FetchParams) {
-  const spotifyApiBase = "https://api.spotify.com/v1";
-  return fetch(spotifyApiBase + endpoint + options, {
+export async function spotifyFetch(endpoint: string, method: HTTPMethod = "GET", options: OptionsObject = {}) {
+  return fetch(`https://api.spotify.com/v1${endpoint}?${objectToQueryString(options)}`, {
     method,
     headers: {
       Authorization: `Bearer ${getTokenFromCookie()}`,
@@ -23,7 +25,7 @@ export async function spotifyFetch({endpoint, options='', method="GET"}: FetchPa
 }
 
 async function getUser(): Promise<SpotifyApi.CurrentUsersProfileResponse> {
-  const user = await spotifyFetch({ endpoint: "/me" })
+  const user = await spotifyFetch("/me")
   const body = await user.json();
   return body;
 }
@@ -40,13 +42,12 @@ export async function getUserMarket(): Promise<string | undefined> {
 
 export async function getLibrary(setCompletion?: SetCompletion) {
   const market = await getUserMarket();
-  const endpoint = "/me/tracks";
   let library: SpotifyApi.TrackObjectFull[] = [];
   let next: string | null;
   let offset = 0;
 
   do {
-    let response = await spotifyFetch({ endpoint, options: `?limit=${BATCH_SIZE}&market=${market}&offset=${offset}`}); // come back to this - use object to params method and pass in object instead
+    let response = await spotifyFetch("/me/tracks", "GET", {limit: BATCH_SIZE, offset, market });
     let body: SpotifyApi.UsersSavedTracksResponse = await response.json();
     library.push(...body.items.map((savedTrack) => savedTrack.track)); // tidy this line up
 
@@ -75,10 +76,8 @@ export async function likeSongs(songsToLike: string[], setCompletion?: SetComple
   let currentBatch = 0;
 
   batches.forEach(async (batch) => {
-    let response = await spotifyFetch({
-      endpoint: "/me/tracks",
-      method: "PUT",
-      options: `?ids=${batch.map(song => getTrackId(song)).join(',')}`,
+    let response = await spotifyFetch("/me/tracks", "PUT", {
+      ids: batch.map(song => getTrackId(song)).join(',')
     });
 
     if (!response.ok) {
