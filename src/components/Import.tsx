@@ -10,13 +10,13 @@ import {
 } from "./importComponents";
 
 function Import() {
-  let [file, setFile] = useState<File>();
-  let [trackIds, setTrackIds] = useState<string[]>([]);
-  let [currentLibrary, setCurrentLibrary] = useState<
+  const [file, setFile] = useState<File>();
+  const [trackIds, setTrackIds] = useState<string[]>([]);
+  const [currentLibrary, setCurrentLibrary] = useState<
     SpotifyApi.TrackObjectFull[]
   >([]);
-  let [songsToLike, setSongsToLike] = useState<string[]>([]);
-  let [okToFetch, setOkToFetch] = useState(false);
+  const [songsToLike, setSongsToLike] = useState<string[]>([]);
+  const [okToFetch, setOkToFetch] = useState(false);
 
   useEffect(() => {
     const fetchCurrentLibrary = async () => {

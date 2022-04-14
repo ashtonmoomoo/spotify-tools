@@ -1,8 +1,8 @@
-import { isSpotifyTrackId } from './constants';
+import { isSpotifyTrackId } from "./constants";
 
 // I still don't like how these 3 functions work
 function escapeForCSV(field: string) {
-  return `"${field.replace(/"/g, '""')}"`;
+  return `"${field.replace(/"/g, "\"\"")}"`;
 }
 
 export function prepareSongForCSV(song: SpotifyApi.TrackObjectFull) {
@@ -41,14 +41,14 @@ export function downloadCSV(csvContent: string) {
 }
 
 export function parseCSVIntoTrackIds(CSVContent: string) {
-  let rows = CSVContent.split("\n");
-  let trackIds: string[] = [];
+  const rows = CSVContent.split("\n");
+  const trackIds: string[] = [];
 
   rows.forEach((row) => {
-    let entries = row.split(",");
+    const entries = row.split(",");
     entries.forEach((entry) => {
       if (isSpotifyTrackId(entry)) {
-        trackIds.push(entry.replaceAll('"', ""));
+        trackIds.push(entry.replaceAll("\"", ""));
       }
     });
   });
