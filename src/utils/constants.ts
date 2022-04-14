@@ -40,6 +40,10 @@ export async function getUserMarket(): Promise<string | undefined> {
   return user?.country;
 }
 
+function getTracksFromSavedTrackResponse(tracksResponse: SpotifyApi.UsersSavedTracksResponse) {
+  return tracksResponse.items.map((savedTrack) => savedTrack.track);
+}
+
 export async function getLibrary(setCompletion?: SetCompletion) {
   const market = await getUserMarket();
   let library: SpotifyApi.TrackObjectFull[] = [];
@@ -47,9 +51,9 @@ export async function getLibrary(setCompletion?: SetCompletion) {
   let offset = 0;
 
   do {
-    let response = await spotifyFetch("/me/tracks", "GET", {limit: BATCH_SIZE, offset, market });
+    let response = await spotifyFetch("/me/tracks", "GET", { limit: BATCH_SIZE, offset, market });
     let body: SpotifyApi.UsersSavedTracksResponse = await response.json();
-    library.push(...body.items.map((savedTrack) => savedTrack.track)); // tidy this line up
+    library.push(...getTracksFromSavedTrackResponse(body));
 
     next = body.next;
     offset += BATCH_SIZE;
