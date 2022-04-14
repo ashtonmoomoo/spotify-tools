@@ -36,9 +36,9 @@ function Progress({ completion }: { completion: string }) {
 }
 
 function Export() {
-  let [loading, setLoading] = useState(false);
-  let [completion, setCompletion] = useState("0.00");
-  let [CSVContent, setCSVContent] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [completion, setCompletion] = useState("0.00");
+  const [CSVContent, setCSVContent] = useState("");
   const token = getTokenFromCookie();
 
   async function exportLibrary() {

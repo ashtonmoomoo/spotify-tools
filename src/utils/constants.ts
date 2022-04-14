@@ -1,4 +1,8 @@
-import { getTokenFromCookie, batchifyArray, objectToQueryString } from "./tools";
+import {
+  getTokenFromCookie,
+  batchifyArray,
+  objectToQueryString,
+} from "./tools";
 
 const BATCH_SIZE = 50; // API limit
 
@@ -9,23 +13,30 @@ type OptionsObject = {
   market?: string;
   limit?: number;
   offset?: number;
-}
+};
 
 type SetCompletion = (completion: string) => void;
 
-export async function spotifyFetch(endpoint: string, method: HTTPMethod = "GET", options: OptionsObject = {}) {
-  return fetch(`https://api.spotify.com/v1${endpoint}?${objectToQueryString(options)}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${getTokenFromCookie()}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-  });
+export async function spotifyFetch(
+  endpoint: string,
+  method: HTTPMethod = "GET",
+  options: OptionsObject = {}
+) {
+  return fetch(
+    `https://api.spotify.com/v1${endpoint}?${objectToQueryString(options)}`,
+    {
+      method,
+      headers: {
+        Authorization: `Bearer ${getTokenFromCookie()}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    }
+  );
 }
 
 async function getUser(): Promise<SpotifyApi.CurrentUsersProfileResponse> {
-  const user = await spotifyFetch("/me")
+  const user = await spotifyFetch("/me");
   const body = await user.json();
   return body;
 }
@@ -40,19 +51,25 @@ export async function getUserMarket(): Promise<string | undefined> {
   return user?.country;
 }
 
-function getTracksFromSavedTrackResponse(tracksResponse: SpotifyApi.UsersSavedTracksResponse) {
+function getTracksFromSavedTrackResponse(
+  tracksResponse: SpotifyApi.UsersSavedTracksResponse
+) {
   return tracksResponse.items.map((savedTrack) => savedTrack.track);
 }
 
 export async function getLibrary(setCompletion?: SetCompletion) {
   const market = await getUserMarket();
-  let library: SpotifyApi.TrackObjectFull[] = [];
+  const library: SpotifyApi.TrackObjectFull[] = [];
   let next: string | null;
   let offset = 0;
 
   do {
-    let response = await spotifyFetch("/me/tracks", "GET", { limit: BATCH_SIZE, offset, market });
-    let body: SpotifyApi.UsersSavedTracksResponse = await response.json();
+    const response = await spotifyFetch("/me/tracks", "GET", {
+      limit: BATCH_SIZE,
+      offset,
+      market,
+    });
+    const body: SpotifyApi.UsersSavedTracksResponse = await response.json();
     library.push(...getTracksFromSavedTrackResponse(body));
 
     next = body.next;
@@ -67,7 +84,7 @@ export async function getLibrary(setCompletion?: SetCompletion) {
 }
 
 function getTrackId(uri: string) {
-  return uri.split(':')[2];
+  return uri.split(":")[2];
 }
 
 export function isSpotifyTrackId(str: string) {
@@ -75,13 +92,16 @@ export function isSpotifyTrackId(str: string) {
   return pattern.test(str);
 }
 
-export async function likeSongs(songsToLike: string[], setCompletion?: SetCompletion) {
+export async function likeSongs(
+  songsToLike: string[],
+  setCompletion?: SetCompletion
+) {
   const batches = batchifyArray(songsToLike, BATCH_SIZE);
   let currentBatch = 0;
 
   batches.forEach(async (batch) => {
-    let response = await spotifyFetch("/me/tracks", "PUT", {
-      ids: batch.map(song => getTrackId(song)).join(',')
+    const response = await spotifyFetch("/me/tracks", "PUT", {
+      ids: batch.map((song) => getTrackId(song)).join(","),
     });
 
     if (!response.ok) {
@@ -94,13 +114,15 @@ export async function likeSongs(songsToLike: string[], setCompletion?: SetComple
   });
 }
 
-export function removeDuplicateTracks(library: SpotifyApi.TrackObjectFull[]): SpotifyApi.TrackObjectFull[] {
-  let idToTrack = new Map<string, SpotifyApi.TrackObjectFull>();
+export function removeDuplicateTracks(
+  library: SpotifyApi.TrackObjectFull[]
+): SpotifyApi.TrackObjectFull[] {
+  const idToTrack = new Map<string, SpotifyApi.TrackObjectFull>();
   library.forEach((t) => idToTrack.set(t.id, t));
   return [...idToTrack.values()];
 }
 
 export function findMissingSongs(currentLibrary: string[], source: string[]) {
-  let currentLibrarySet = new Set(currentLibrary);
+  const currentLibrarySet = new Set(currentLibrary);
   return source.filter((song) => !currentLibrarySet.has(song));
 }
