@@ -5,6 +5,7 @@ export function UploadCSV({
   setFile: (f: File) => void;
   setOkToFetch: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function handleUpload(event: any) {
     setFile(event?.target?.files[0]);
   }

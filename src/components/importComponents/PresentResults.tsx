@@ -2,8 +2,8 @@ import { useState } from "react";
 import { AcceptFate, LikeSongsButton, ShowMissingSongs } from ".";
 
 export function PresentResults({ songsToLike }: { songsToLike: string[] }) {
-  let [acceptedTerms, setAcceptedTerms] = useState(false);
-  let [progressRestoringLibrary, setProgressRestoringLibrary] =
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [progressRestoringLibrary, setProgressRestoringLibrary] =
     useState("0.00");
 
   return (
