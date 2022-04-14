@@ -27,7 +27,7 @@ export function FeatureList() {
   return (
     <ul>
       {FEATURES.map((feature) => (
-        <li>
+        <li key={feature.url}>
           <Link to={feature.url}>{feature.text}</Link>
         </li>
       ))}
