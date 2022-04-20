@@ -1,5 +1,9 @@
-import { useState } from "react";
-import { getLibrary, removeDuplicateTracks } from "../utils/constants";
+import { useEffect, useState } from "react";
+import {
+  getLibrary,
+  getUserPlaylists,
+  removeDuplicateTracks,
+} from "../utils/constants";
 import { getTokenFromCookie } from "../utils/tools";
 import { downloadCSV, getCSV } from "../utils/csvTools";
 import Button from "./Button";
@@ -35,7 +39,7 @@ function Progress({ completion }: { completion: string }) {
   );
 }
 
-function Export() {
+function ExportInstance() {
   const [loading, setLoading] = useState(false);
   const [completion, setCompletion] = useState("0.00");
   const [CSVContent, setCSVContent] = useState("");
@@ -64,6 +68,44 @@ function Export() {
   }
 
   return <ExpiredSession />;
+}
+
+function Export() {
+  const [playlists, setPlaylists] = useState<
+    SpotifyApi.PlaylistObjectSimplified[]
+  >([]);
+  const [selectedPlaylists, setSelectedPlaylists] = useState<
+    SpotifyApi.PlaylistObjectSimplified[]
+  >([]);
+
+  useEffect(() => {
+    const fetchPlaylists = async () => {
+      setPlaylists(await getUserPlaylists());
+    };
+
+    fetchPlaylists();
+  }, []);
+
+  return (
+    <>
+      {playlists.map((playlist) => (
+        <div key={playlist.id}>
+          <input
+            id={playlist.id}
+            type="checkbox"
+            key={playlist.id}
+            onChange={() =>
+              setSelectedPlaylists([...selectedPlaylists, playlist])
+            }
+          />
+          <label htmlFor={playlist.id}>{playlist.name}</label>
+        </div>
+      ))}
+      <button type="submit" onClick={() => console.log(selectedPlaylists)}>
+        Submit
+      </button>
+    </>
+  );
 }
 
 export default Export;

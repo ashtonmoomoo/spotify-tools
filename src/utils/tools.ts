@@ -67,7 +67,13 @@ export function getAuthUrl() {
     client_id: clientId,
     response_type: "token",
     redirect_uri: redirectUri,
-    scope: "user-library-modify user-library-read user-read-private",
+    scope: "user-library-modify \
+            user-library-read \
+            user-read-private \
+            playlist-read-private \
+            playlist-modify-private \
+            playlist-modify-public \
+            playlist-read-collaborative",
   };
 
   return "https://accounts.spotify.com/authorize?" + objectToQueryString(params);

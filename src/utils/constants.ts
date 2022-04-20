@@ -51,6 +51,28 @@ export async function getUserMarket(): Promise<string | undefined> {
   return user?.country;
 }
 
+export async function getUserPlaylists(): Promise<SpotifyApi.PlaylistObjectSimplified[]> {
+  const playlists: SpotifyApi.PlaylistObjectSimplified[] = [];
+  let next: string | null;
+  let offset = 0;
+
+  do {
+    const response = await spotifyFetch("/me/playlists",
+      "GET", {
+        limit: BATCH_SIZE,
+        offset,
+      });
+    const playlistPage: SpotifyApi.ListOfCurrentUsersPlaylistsResponse = await response.json();
+
+    playlists.push(...playlistPage.items);
+
+    next = playlistPage.next;
+    offset += BATCH_SIZE;
+  } while (next);
+
+  return playlists;
+}
+
 function getTracksFromSavedTrackResponse(
   tracksResponse: SpotifyApi.UsersSavedTracksResponse
 ) {
