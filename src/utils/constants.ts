@@ -41,6 +41,11 @@ async function getUser(): Promise<SpotifyApi.CurrentUsersProfileResponse> {
   return body;
 }
 
+export async function getUserId(): Promise<string | undefined> {
+  const user = await getUser();
+  return user?.id;
+}
+
 export async function getUsername(): Promise<string | undefined> {
   const user = await getUser();
   return user?.display_name;
