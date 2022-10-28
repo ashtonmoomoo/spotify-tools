@@ -1,7 +1,7 @@
 import { useState } from "react";
 import ExpiredSession from "../components/ExpiredSession";
 import Export from "../components/Export";
-import Import from "../components/Import";
+import { ImportToLibrary } from "../components/Import";
 import { getTokenFromCookie } from "../utils/tools";
 import "../styles/exportImport.css";
 
@@ -46,7 +46,7 @@ function ExportImport() {
       </span>
       <div>
         {exportVisible && <Export libraryMode={libraryMode} />}
-        {!exportVisible && <Import />}
+        {!exportVisible && <ImportToLibrary />}
       </div>
     </>
   );

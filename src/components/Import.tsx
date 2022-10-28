@@ -9,7 +9,7 @@ import {
   Instructions,
 } from "./importComponents";
 
-function Import() {
+export function ImportToLibrary() {
   const [file, setFile] = useState<File>();
   const [trackIds, setTrackIds] = useState<string[]>([]);
   const [currentLibrary, setCurrentLibrary] = useState<
@@ -64,5 +64,3 @@ function Import() {
     </>
   );
 }
-
-export default Import;
