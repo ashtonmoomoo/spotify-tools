@@ -7,6 +7,7 @@ import "../styles/exportImport.css";
 
 function ExportImport() {
   const [exportVisible, setExportVisible] = useState(true);
+  const [libraryMode, setLibraryMode] = useState(true);
 
   function showExport() {
     setExportVisible(true);
@@ -39,12 +40,32 @@ function ExportImport() {
       <span id="import" className="not-selected" onClick={() => showImport()}>
         Import
       </span>
-      <span className="non-header"> your library</span>
+      <span className="non-header">
+        {" "}
+        your <LibraryOrPlaylists setLibraryMode={setLibraryMode} />
+      </span>
       <div>
-        {exportVisible && <Export />}
+        {exportVisible && <Export libraryMode={libraryMode} />}
         {!exportVisible && <Import />}
       </div>
     </>
+  );
+}
+
+function LibraryOrPlaylists({
+  setLibraryMode,
+}: {
+  setLibraryMode: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  return (
+    <select onChange={(e) => setLibraryMode(e.target.value === "library")}>
+      <option key="library" value={"library"}>
+        library
+      </option>
+      <option key="playlists" value={"playlists"}>
+        playlists
+      </option>
+    </select>
   );
 }
 

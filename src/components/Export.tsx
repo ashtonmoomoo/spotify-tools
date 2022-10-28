@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import {
+  getFullPlaylists,
   getLibrary,
+  getTrackArraysFromPlaylists,
   getUserPlaylists,
   removeDuplicateTracks,
 } from "../utils/constants";
-import { getTokenFromCookie } from "../utils/tools";
 import { downloadCSV, getCSV } from "../utils/csvTools";
 import Button from "./Button";
-import ExpiredSession from "./ExpiredSession";
 
 function ExportLibraryButton({ handleClick }: { handleClick: () => void }) {
   return (
@@ -21,11 +21,14 @@ function ExportLibraryButton({ handleClick }: { handleClick: () => void }) {
   );
 }
 
-function CSVDownload({ csvContent }: { csvContent: string }) {
+function CSVDownload({ name, csvContent }: DownloadLink) {
   return (
     <Button
-      buttonProps={{ type: "button", onClick: () => downloadCSV(csvContent) }}
-      text="Download"
+      buttonProps={{
+        type: "button",
+        onClick: () => downloadCSV(name, csvContent),
+      }}
+      text={`Download ${name}`}
     />
   );
 }
@@ -43,11 +46,8 @@ function ExportInstance() {
   const [loading, setLoading] = useState(false);
   const [completion, setCompletion] = useState("0.00");
   const [CSVContent, setCSVContent] = useState("");
-  const token = getTokenFromCookie();
 
   async function exportLibrary() {
-    if (!token) return null;
-
     setLoading(true);
     const response = await getLibrary(setCompletion);
     const content = getCSV(removeDuplicateTracks(response));
@@ -60,17 +60,18 @@ function ExportInstance() {
   }
 
   if (CSVContent) {
-    return <CSVDownload csvContent={CSVContent} />;
+    return <CSVDownload name="Library" csvContent={CSVContent} />;
   }
 
-  if (token) {
-    return <ExportLibraryButton handleClick={exportLibrary} />;
-  }
-
-  return <ExpiredSession />;
+  return <ExportLibraryButton handleClick={exportLibrary} />;
 }
 
-function Export() {
+type DownloadLink = {
+  name: string;
+  csvContent: string;
+};
+
+function Export({ libraryMode }: { libraryMode: boolean }) {
   const [playlists, setPlaylists] = useState<
     SpotifyApi.PlaylistObjectSimplified[]
   >([]);
@@ -78,16 +79,78 @@ function Export() {
     SpotifyApi.PlaylistObjectSimplified[]
   >([]);
 
-  useEffect(() => {
-    const fetchPlaylists = async () => {
-      setPlaylists(await getUserPlaylists());
-    };
+  const [downloadLinks, setDownloadLinks] = useState<DownloadLink[]>([]);
 
+  useEffect(() => {
+    const fetchPlaylists = async () => setPlaylists(await getUserPlaylists());
     fetchPlaylists();
   }, []);
 
+  async function createPlaylistDownloadLinks(
+    selectedPlaylists: SpotifyApi.PlaylistObjectSimplified[]
+  ) {
+    const fullPlaylists = await getFullPlaylists(selectedPlaylists);
+    const trackArrayArray = getTrackArraysFromPlaylists(fullPlaylists);
+    const downloadData = trackArrayArray.map((trackArray) => {
+      return { name: trackArray.name, csvContent: getCSV(trackArray.tracks) };
+    });
+    setDownloadLinks(downloadData);
+  }
+
+  if (downloadLinks.length) {
+    return (
+      <>
+        {downloadLinks.map((downloadLink) => (
+          <>
+            <CSVDownload
+              key={downloadLink.name}
+              name={downloadLink.name}
+              csvContent={downloadLink.csvContent}
+            />
+            <br />
+          </>
+        ))}
+      </>
+    );
+  }
+
   return (
     <>
+      {!libraryMode && (
+        <>
+          <PlaylistSelect
+            playlists={playlists}
+            selectedPlaylists={selectedPlaylists}
+            setSelectedPlaylists={setSelectedPlaylists}
+          />
+          <button
+            type="submit"
+            onClick={() => createPlaylistDownloadLinks(selectedPlaylists)}
+          >
+            Submit
+          </button>
+        </>
+      )}
+      {libraryMode && <ExportInstance />}
+    </>
+  );
+}
+
+type SetSelectedPlaylists = (
+  playlists: SpotifyApi.PlaylistObjectSimplified[]
+) => void;
+
+function PlaylistSelect({
+  playlists,
+  selectedPlaylists,
+  setSelectedPlaylists,
+}: {
+  playlists: SpotifyApi.PlaylistObjectSimplified[];
+  selectedPlaylists: SpotifyApi.PlaylistObjectSimplified[];
+  setSelectedPlaylists: SetSelectedPlaylists;
+}) {
+  return (
+    <div className="scrollable">
       {playlists.map((playlist) => (
         <div key={playlist.id}>
           <input
@@ -101,10 +164,7 @@ function Export() {
           <label htmlFor={playlist.id}>{playlist.name}</label>
         </div>
       ))}
-      <button type="submit" onClick={() => console.log(selectedPlaylists)}>
-        Submit
-      </button>
-    </>
+    </div>
   );
 }
 

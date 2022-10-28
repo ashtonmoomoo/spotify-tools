@@ -51,18 +51,20 @@ export async function getUserMarket(): Promise<string | undefined> {
   return user?.country;
 }
 
-export async function getUserPlaylists(): Promise<SpotifyApi.PlaylistObjectSimplified[]> {
+export async function getUserPlaylists(): Promise<
+  SpotifyApi.PlaylistObjectSimplified[]
+  > {
   const playlists: SpotifyApi.PlaylistObjectSimplified[] = [];
   let next: string | null;
   let offset = 0;
 
   do {
-    const response = await spotifyFetch("/me/playlists",
-      "GET", {
-        limit: BATCH_SIZE,
-        offset,
-      });
-    const playlistPage: SpotifyApi.ListOfCurrentUsersPlaylistsResponse = await response.json();
+    const response = await spotifyFetch("/me/playlists", "GET", {
+      limit: BATCH_SIZE,
+      offset,
+    });
+    const playlistPage: SpotifyApi.ListOfCurrentUsersPlaylistsResponse =
+      await response.json();
 
     playlists.push(...playlistPage.items);
 
@@ -71,6 +73,42 @@ export async function getUserPlaylists(): Promise<SpotifyApi.PlaylistObjectSimpl
   } while (next);
 
   return playlists;
+}
+
+type PlaylistReduced = {
+  name: string;
+  tracks: SpotifyApi.TrackObjectFull[];
+};
+
+export function getTrackArraysFromPlaylists(
+  playlists: SpotifyApi.PlaylistObjectFull[]
+) {
+  const trackArrays: PlaylistReduced[] = [];
+  playlists.forEach((playlist) => {
+    const tracks = playlist.tracks.items.map((item) => item.track);
+    trackArrays.push({ name: playlist.name, tracks });
+  });
+  return trackArrays;
+}
+
+async function getFullPlaylist(
+  simplePlaylist: SpotifyApi.PlaylistObjectSimplified
+) {
+  const response = await spotifyFetch(`/playlists/${simplePlaylist.id}`);
+  const fullPlaylist: SpotifyApi.PlaylistObjectFull = await response.json();
+  return fullPlaylist;
+}
+
+export async function getFullPlaylists(
+  simplePlaylists: SpotifyApi.PlaylistObjectSimplified[]
+) {
+  const fullPlaylists: SpotifyApi.PlaylistObjectFull[] = [];
+
+  for (const playlist of simplePlaylists) {
+    fullPlaylists.push(await getFullPlaylist(playlist));
+  }
+
+  return fullPlaylists;
 }
 
 function getTracksFromSavedTrackResponse(

@@ -40,3 +40,10 @@ span {
   width: 120px;
 }
 
+.scrollable {
+  border: 1px solid black;
+  height: 200px;
+  width: 480px;
+  overflow-y: auto;
+}
+
