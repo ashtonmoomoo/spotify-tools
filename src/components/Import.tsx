@@ -8,6 +8,16 @@ import {
   NoDiff,
   Instructions,
 } from "./importComponents";
+import Button from "./Button";
+import { addSongsToPlaylist, createPlaylist } from "../utils/playlists";
+
+export function Import({ libraryMode }: { libraryMode: boolean }) {
+  if (libraryMode) {
+    return <ImportToLibrary />;
+  }
+
+  return <ImportToPlaylist />;
+}
 
 export function ImportToLibrary() {
   const [file, setFile] = useState<File>();
@@ -61,6 +71,53 @@ export function ImportToLibrary() {
     <>
       <Instructions />
       <UploadCSV setFile={setFile} setOkToFetch={setOkToFetch} />
+    </>
+  );
+}
+
+export function ImportToPlaylist() {
+  const [showNewPlaylistInput, setShowNewPlaylistInput] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState("");
+  const [trackIds, setTrackIds] = useState<string[]>([]);
+  const [file, setFile] = useState<File>();
+
+  useEffect(() => {
+    const fetchSongsFromCSV = async (file: File) => {
+      const csvContent = await readFile(file);
+      const parsedTrackIds = parseCSVIntoTrackIds(csvContent);
+      setTrackIds(parsedTrackIds);
+    };
+
+    if (file) {
+      fetchSongsFromCSV(file);
+      setShowNewPlaylistInput(true);
+    }
+  }, [file]);
+
+  const submit = async () => {
+    const playlistId = await createPlaylist(newPlaylistName);
+    if (!playlistId) return;
+
+    await addSongsToPlaylist(trackIds, playlistId);
+  };
+
+  return (
+    <>
+      <Instructions />
+      {!showNewPlaylistInput && (
+        <UploadCSV setFile={setFile} setOkToFetch={() => false} />
+      )}
+      {showNewPlaylistInput && (
+        <>
+          <p>New playlist name:</p>
+          <input
+            type={"text"}
+            value={newPlaylistName}
+            onChange={(e) => setNewPlaylistName(e.target.value)}
+          />
+          <Button text="Submit" buttonProps={{ onClick: () => submit() }} />
+        </>
+      )}
     </>
   );
 }

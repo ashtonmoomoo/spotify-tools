@@ -12,6 +12,14 @@ export function getTokenFromCookie() {
     ?.split("=")[1];
 }
 
+export function getAuthHeaders() {
+  return {
+    Authorization: `Bearer ${getTokenFromCookie()}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+}
+
 export async function readFile(file: File): Promise<string> {
   const result = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();

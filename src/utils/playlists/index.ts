@@ -1,17 +1,21 @@
 import { getUserId } from "../constants";
-import { batchifyArray } from "../tools";
+import { batchifyArray, getAuthHeaders } from "../tools";
 
 const MAX_SONGS_BATCH = 100;
 
 export async function createPlaylist(name: string): Promise<string | null> {
-  const userId = getUserId();
-  const result = await fetch(`/users/${userId}/playlists`, {
-    method: "POST",
-    body: JSON.stringify({
-      name,
-      public: false,
-    }),
-  });
+  const userId = await getUserId();
+  const result = await fetch(
+    `https://api.spotify.com/v1/users/${userId}/playlists`,
+    {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        name,
+        public: false,
+      }),
+    }
+  );
 
   if (result.status !== 201) {
     return null;
@@ -30,12 +34,16 @@ export async function addSongsToPlaylist(
   const snapshotIds: string[] = [];
 
   for (const batch of batchedSongs) {
-    const result = await fetch(`/playlists/${playlistId}/tracks`, {
-      method: "POST",
-      body: JSON.stringify({
-        uris: batch,
-      }),
-    });
+    const result = await fetch(
+      `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          uris: batch,
+        }),
+      }
+    );
 
     if (result.status !== 201) {
       return null;

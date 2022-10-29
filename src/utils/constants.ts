@@ -1,7 +1,7 @@
 import {
-  getTokenFromCookie,
   batchifyArray,
   objectToQueryString,
+  getAuthHeaders,
 } from "./tools";
 
 const BATCH_SIZE = 50; // API limit
@@ -26,11 +26,7 @@ export async function spotifyFetch(
     `https://api.spotify.com/v1${endpoint}?${objectToQueryString(options)}`,
     {
       method,
-      headers: {
-        Authorization: `Bearer ${getTokenFromCookie()}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
+      headers: getAuthHeaders(),
     }
   );
 }
