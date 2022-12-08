@@ -80,6 +80,7 @@ export function ImportToPlaylist() {
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [trackIds, setTrackIds] = useState<string[]>([]);
   const [file, setFile] = useState<File>();
+  const [importComplete, setImportComplete] = useState(false);
 
   useEffect(() => {
     const fetchSongsFromCSV = async (file: File) => {
@@ -98,7 +99,10 @@ export function ImportToPlaylist() {
     const playlistId = await createPlaylist(newPlaylistName);
     if (!playlistId) return;
 
-    await addSongsToPlaylist(trackIds, playlistId);
+    const snapshotIds = await addSongsToPlaylist(trackIds, playlistId);
+    if (snapshotIds?.length) {
+      setImportComplete(true);
+    }
   };
 
   return (
@@ -118,6 +122,7 @@ export function ImportToPlaylist() {
           <Button text="Submit" buttonProps={{ onClick: () => submit() }} />
         </>
       )}
+      {importComplete && <p>{newPlaylistName} created!</p>}
     </>
   );
 }
