@@ -24,7 +24,7 @@ export function getCSV(library: SpotifyApi.TrackObjectFull[]) {
   return csv;
 }
 
-export function downloadCSV(csvContent: string) {
+export function downloadCSV(name: string, csvContent: string) {
   const blob = new Blob([csvContent], {
     type: "text/csv;charset=utf-8;",
   });
@@ -33,7 +33,7 @@ export function downloadCSV(csvContent: string) {
   link.setAttribute("href", url);
   link.setAttribute(
     "download",
-    `library_export_${new Date(Date.now()).toISOString()}.csv`
+    `spotify_export_${name}_${new Date(Date.now()).toISOString()}.csv`
   );
   document.body.appendChild(link);
   link.click();

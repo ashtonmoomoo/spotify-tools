@@ -12,6 +12,14 @@ export function getTokenFromCookie() {
     ?.split("=")[1];
 }
 
+export function getAuthHeaders() {
+  return {
+    Authorization: `Bearer ${getTokenFromCookie()}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+}
+
 export async function readFile(file: File): Promise<string> {
   const result = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -67,7 +75,13 @@ export function getAuthUrl() {
     client_id: clientId,
     response_type: "token",
     redirect_uri: redirectUri,
-    scope: "user-library-modify user-library-read user-read-private",
+    scope: "user-library-modify \
+            user-library-read \
+            user-read-private \
+            playlist-read-private \
+            playlist-modify-private \
+            playlist-modify-public \
+            playlist-read-collaborative",
   };
 
   return "https://accounts.spotify.com/authorize?" + objectToQueryString(params);

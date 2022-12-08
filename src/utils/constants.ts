@@ -1,7 +1,7 @@
 import {
-  getTokenFromCookie,
   batchifyArray,
   objectToQueryString,
+  getAuthHeaders,
 } from "./tools";
 
 const BATCH_SIZE = 50; // API limit
@@ -26,11 +26,7 @@ export async function spotifyFetch(
     `https://api.spotify.com/v1${endpoint}?${objectToQueryString(options)}`,
     {
       method,
-      headers: {
-        Authorization: `Bearer ${getTokenFromCookie()}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
+      headers: getAuthHeaders(),
     }
   );
 }
@@ -41,6 +37,11 @@ async function getUser(): Promise<SpotifyApi.CurrentUsersProfileResponse> {
   return body;
 }
 
+export async function getUserId(): Promise<string | undefined> {
+  const user = await getUser();
+  return user?.id;
+}
+
 export async function getUsername(): Promise<string | undefined> {
   const user = await getUser();
   return user?.display_name;
@@ -49,6 +50,66 @@ export async function getUsername(): Promise<string | undefined> {
 export async function getUserMarket(): Promise<string | undefined> {
   const user = await getUser();
   return user?.country;
+}
+
+export async function getUserPlaylists(): Promise<
+  SpotifyApi.PlaylistObjectSimplified[]
+  > {
+  const playlists: SpotifyApi.PlaylistObjectSimplified[] = [];
+  let next: string | null;
+  let offset = 0;
+
+  do {
+    const response = await spotifyFetch("/me/playlists", "GET", {
+      limit: BATCH_SIZE,
+      offset,
+    });
+    const playlistPage: SpotifyApi.ListOfCurrentUsersPlaylistsResponse =
+      await response.json();
+
+    playlists.push(...playlistPage.items);
+
+    next = playlistPage.next;
+    offset += BATCH_SIZE;
+  } while (next);
+
+  return playlists;
+}
+
+type PlaylistReduced = {
+  name: string;
+  tracks: SpotifyApi.TrackObjectFull[];
+};
+
+export function getTrackArraysFromPlaylists(
+  playlists: SpotifyApi.PlaylistObjectFull[]
+) {
+  const trackArrays: PlaylistReduced[] = [];
+  playlists.forEach((playlist) => {
+    const tracks = playlist.tracks.items.map((item) => item.track);
+    trackArrays.push({ name: playlist.name, tracks });
+  });
+  return trackArrays;
+}
+
+async function getFullPlaylist(
+  simplePlaylist: SpotifyApi.PlaylistObjectSimplified
+) {
+  const response = await spotifyFetch(`/playlists/${simplePlaylist.id}`);
+  const fullPlaylist: SpotifyApi.PlaylistObjectFull = await response.json();
+  return fullPlaylist;
+}
+
+export async function getFullPlaylists(
+  simplePlaylists: SpotifyApi.PlaylistObjectSimplified[]
+) {
+  const fullPlaylists: SpotifyApi.PlaylistObjectFull[] = [];
+
+  for (const playlist of simplePlaylists) {
+    fullPlaylists.push(await getFullPlaylist(playlist));
+  }
+
+  return fullPlaylists;
 }
 
 function getTracksFromSavedTrackResponse(
